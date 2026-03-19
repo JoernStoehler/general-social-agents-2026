@@ -1,0 +1,172 @@
+{
+  "_source": "Extracted verbatim from manning_horton_2026_source/optimize.tex (line 644-645, 621) and tables/personas.tex",
+  "_cross_check": "Weights verified against paper_key_details.md section 3 — exact match confirmed",
+
+  "system_preamble": "You are a human being with all the cognitive biases and heuristics that come with it.",
+
+  "klevel_explanation": "A k-level thinker thinks k steps ahead. A 0-level thinker thinks 0 steps and would, therefore, just select the maximum amount that guarantees money.",
+
+  "notes_on_preamble": "The system_preamble is prepended to ALL 10 strategic personas. The klevel_explanation is additionally included for all personas EXCEPT the random-picker persona (9th in list). Source: optimize.tex footnote to Table 2, lines 644-645.",
+
+  "chain_of_thought_prompt_1": "{11-20 game instructions}. Reason out a few settings according to your personality and how others might respond.",
+
+  "chain_of_thought_prompt_2": "{11-20 game instructions}. You previously had the following thoughts: {Response to prompt 1}. What amount of money would you request?",
+
+  "notes_on_cot": "Two sequential prompts implement chain-of-thought reasoning (Wei et al. 2024). The placeholder {11-20 game instructions} is the full game instruction text verbatim. Source: optimize.tex line 621 (footnote to the elicitation paragraph). Each persona was elicited 100 times with GPT-4o at temperature=1.",
+
+  "game_instructions_basic_1120": "You and another player are playing a game in which each player requests an amount of money. The amount must be (an integer) between 11 and 20 shekels. Each player will receive the amount he requests. A player will receive an additional amount of 20 shekels if he asks for exactly one shekel less than the other player. What amount of money would you request?",
+
+  "personas": [
+    {
+      "index": 1,
+      "name": "L0 thinker",
+      "prompt_text": "You are generally a 0-level thinker---picking the option with the most guaranteed money.",
+      "weight": 0.065,
+      "count_in_1000_agents": 65,
+      "receives_klevel_explanation": true,
+      "notes": "Pure level-0: always picks 20 (maximum guaranteed)"
+    },
+    {
+      "index": 2,
+      "name": "L0-L1 thinker",
+      "prompt_text": "You vary between a 0 and 1-level thinker.",
+      "weight": 0.000,
+      "count_in_1000_agents": 0,
+      "receives_klevel_explanation": true,
+      "notes": "Zero weight in optimized mixture"
+    },
+    {
+      "index": 3,
+      "name": "L1-L2 thinker",
+      "prompt_text": "You vary between a 1 and 2-level thinker.",
+      "weight": 0.000,
+      "count_in_1000_agents": 0,
+      "receives_klevel_explanation": true,
+      "notes": "Zero weight in optimized mixture"
+    },
+    {
+      "index": 4,
+      "name": "L0-L1-L2 thinker",
+      "prompt_text": "You vary between a 0, 1, and 2-level thinker.",
+      "weight": 0.000,
+      "count_in_1000_agents": 0,
+      "receives_klevel_explanation": true,
+      "notes": "Zero weight in optimized mixture"
+    },
+    {
+      "index": 5,
+      "name": "L0-L1-L2-L3 thinker",
+      "prompt_text": "You vary between a 0, 1, 2, and 3-level thinker.",
+      "weight": 0.000,
+      "count_in_1000_agents": 0,
+      "receives_klevel_explanation": true,
+      "notes": "Zero weight in optimized mixture"
+    },
+    {
+      "index": 6,
+      "name": "L1-L2-L3 thinker",
+      "prompt_text": "You vary between a 1, 2, and 3-level thinker.",
+      "weight": 0.469,
+      "count_in_1000_agents": 469,
+      "receives_klevel_explanation": true,
+      "notes": "Largest weight: 46.9% of optimized mixture. Corresponds to L3 play (choose 17) as modal output."
+    },
+    {
+      "index": 7,
+      "name": "L0-L1-L2-L3-L4 thinker",
+      "prompt_text": "You vary between a 0, 1, 2, 3, and 4-level thinker.",
+      "weight": 0.013,
+      "count_in_1000_agents": 13,
+      "receives_klevel_explanation": true,
+      "notes": "Small weight"
+    },
+    {
+      "index": 8,
+      "name": "L0-L1-L2-L3-L4-L5 thinker",
+      "prompt_text": "You vary between a 0, 1, 2, 3, 4 and 5-level thinker.",
+      "weight": 0.339,
+      "count_in_1000_agents": 339,
+      "receives_klevel_explanation": true,
+      "notes": "Second largest weight: 33.9% of optimized mixture"
+    },
+    {
+      "index": 9,
+      "name": "Random lower picker",
+      "prompt_text": "You randomly pick between lower numbers because you think that's the best way to win.",
+      "weight": 0.114,
+      "count_in_1000_agents": 114,
+      "receives_klevel_explanation": false,
+      "notes": "The ONLY persona that does NOT receive the k-level explanation. Third largest weight."
+    },
+    {
+      "index": 10,
+      "name": "Homo Economicus",
+      "prompt_text": "You are Homo Economicus.",
+      "weight": 0.000,
+      "count_in_1000_agents": 0,
+      "receives_klevel_explanation": true,
+      "notes": "Zero weight in optimized mixture"
+    }
+  ],
+
+  "full_prompt_assembly_for_non_random_persona": {
+    "description": "The complete prompt sent as the SYSTEM prompt or prepended context for each agent (all except the random-picker persona)",
+    "format": "[system_preamble] [klevel_explanation] [persona_prompt_text]",
+    "example_for_persona_6": "You are a human being with all the cognitive biases and heuristics that come with it. A k-level thinker thinks k steps ahead. A 0-level thinker thinks 0 steps and would, therefore, just select the maximum amount that guarantees money. You vary between a 1, 2, and 3-level thinker."
+  },
+
+  "full_prompt_assembly_for_random_persona": {
+    "description": "The complete prompt for the random-picker persona (no k-level explanation)",
+    "format": "[system_preamble] [persona_prompt_text]",
+    "example": "You are a human being with all the cognitive biases and heuristics that come with it. You randomly pick between lower numbers because you think that's the best way to win."
+  },
+
+  "weight_verification": {
+    "sum_of_weights": 1.0,
+    "weights_list": [0.065, 0.000, 0.000, 0.000, 0.000, 0.469, 0.013, 0.339, 0.114, 0.000],
+    "computed_sum": 1.0,
+    "matches_paper_key_details_md": true,
+    "source_tex_file": "tables/personas.tex",
+    "discrepancies": "None. Both sources agree exactly on all 10 weights."
+  },
+
+  "optimization_method": {
+    "objective": "Minimize absolute difference between CDFs of human distribution P and mixture distribution",
+    "training_data": "Basic 11-20 game, n=108 human observations (Arad & Rubinstein 2012)",
+    "elicitation_per_persona": 100,
+    "model": "GPT-4o",
+    "temperature": 1,
+    "solver": "Nonlinear programming",
+    "resulting_sample_size": 1000
+  },
+
+  "atheoretical_personas": {
+    "note": "Three atheoretical candidate sets used as negative controls (Table A1 / bad_personas.tex). All failed validation.",
+    "historical_figures": {
+      "format": "You are [Name].",
+      "figures": ["Cleopatra", "Julius Caesar", "Confucius", "Joan of Arc", "Nelson Mandela", "Mahatma Gandhi", "Harriet Tubman", "Leonardo da Vinci", "Albert Einstein", "Marie Curie", "Genghis Khan", "Mother Teresa", "Martin Luther King", "Frida Kahlo", "George Washington", "Winston Churchill", "Mansa Musa", "Sacagawea", "Emmeline Pankhurst", "Socrates"],
+      "optimized_weights": {
+        "Julius Caesar": 0.891,
+        "Confucius": 0.109,
+        "all_others": 0.000
+      }
+    },
+    "mbti_types": {
+      "format": "You are an [TYPE]",
+      "types": ["ESTJ", "ESTP", "ESFJ", "ESFP", "ENTJ", "ENTP", "ENFJ", "ENFP", "ISTJ", "ISTP", "ISFJ", "ISFP", "INTJ", "INTP", "INFJ", "INFP"],
+      "optimized_weights": {
+        "ENFP": 1.000,
+        "all_others": 0.000
+      }
+    },
+    "always_pick_n": {
+      "format": "You always like to pick [N]",
+      "range": "N in {11, 12, ..., 20}",
+      "optimized_weights": {
+        "11": 0.037, "12": 0.000, "13": 0.028, "14": 0.056, "15": 0.009,
+        "16": 0.065, "17": 0.324, "18": 0.296, "19": 0.120, "20": 0.065
+      },
+      "note": "This set achieved perfect in-sample fit (by construction) but completely failed validation."
+    }
+  }
+}
