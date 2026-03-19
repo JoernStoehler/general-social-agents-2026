@@ -73,7 +73,7 @@ def predict_distribution(
     text = raw_text.strip()
     if "```" in text:
         # Extract content between code fences
-        match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
+        match = re.search(r"```(?:\s*json)?\s*\n(.*?)\n?```", text, re.DOTALL)
         if match:
             text = match.group(1).strip()
 
