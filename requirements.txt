@@ -1,0 +1,8 @@
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7
+scipy>=1.10
+anthropic>=0.40
+nashpy>=0.0.40
+ruff>=0.4
+pytest>=8.0

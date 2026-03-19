@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.key
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/
+
+# Results (generated, can be large)
+# Uncomment if you want to gitignore raw results:
+# results/*.json
+
+# Figures (generated)
+# figures/*.png
