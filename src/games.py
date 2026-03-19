@@ -72,6 +72,58 @@ ELEVEN_TWENTY_GAME = Game(
 )
 
 
+def _make_money_request_game(
+    name: str,
+    low: int,
+    high: int,
+    bonus: int,
+    human_data: dict[int, float] | None = None,
+) -> Game:
+    """Create a money request game variant with given parameters."""
+    currency = "shekels"
+    description = (
+        f"You and another player are playing a game in which each player requests "
+        f"an amount of money. The amount must be (an integer) between {low} and {high} "
+        f"{currency}. Each player will receive the amount he requests. A player will "
+        f"receive an additional amount of {bonus} {currency} if he asks for exactly one "
+        f"{currency[:-1]} less than the other player."
+    )
+
+    def payoff(row: int, col: int) -> tuple[float, float]:
+        row_pay = row + (bonus if row == col - 1 else 0)
+        col_pay = col + (bonus if col == row - 1 else 0)
+        return float(row_pay), float(col_pay)
+
+    return Game(
+        name=name,
+        description=description,
+        action_space=list(range(low, high + 1)),
+        human_data=human_data or {a: 0.0 for a in range(low, high + 1)},
+        payoff=payoff,
+    )
+
+
+# --- Structural variants for contamination controls ---
+# No published human data exists for any of these.
+
+WEAK_BONUS_GAME = _make_money_request_game(
+    name="11-20 Money Request Game (bonus=10)",
+    low=11, high=20, bonus=10,
+)
+
+STRONG_BONUS_GAME = _make_money_request_game(
+    name="11-20 Money Request Game (bonus=50)",
+    low=11, high=20, bonus=50,
+)
+
+SHIFTED_RANGE_GAME = _make_money_request_game(
+    name="1-10 Money Request Game (bonus=10)",
+    low=1, high=10, bonus=10,
+)
+
+ALL_VARIANTS = [WEAK_BONUS_GAME, STRONG_BONUS_GAME, SHIFTED_RANGE_GAME]
+
+
 if __name__ == "__main__":
     game = ELEVEN_TWENTY_GAME
     print(f"Game: {game.name}")

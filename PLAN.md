@@ -47,31 +47,61 @@ N=50 to start. The human ground truth is n=108, so there's no point in higher pr
 
 The gap between "what the model predicts humans do" (direct) and "what the model does when role-playing a human" (sampling) is itself interesting. If they differ, that tells us something about the model's self-knowledge.
 
-## Contamination
+## Contamination: Design, Not Detection
 
 ### The Problem
 
-The 11-20 game is from Arad & Rubinstein (2012), a famous AER paper. Modern models have almost certainly seen the human distribution in training. A model that outputs "17: 32%, 18: 30%" might be recalling a table, not predicting behavior.
+The 11-20 game is from Arad & Rubinstein (2012), a famous AER paper. If the human distribution is in the model's training data, any prediction on this game could be recall, not reasoning. A "contamination caveat" is worthless — contaminated results measure nothing.
 
-### How to Test It
+### Why Detection Is Hard
 
-Ask the model two questions:
-1. "What is the published distribution from Arad & Rubinstein (2012)?" (tests recall)
-2. "Here is a game: [rules]. Predict human behavior." (tests prediction)
+Asking the model "do you know this data?" doesn't work. Implicit memorization doesn't require explicit recall. The contamination detection literature (Gao et al. 2024, Zhang et al. 2024) offers heuristics but no reliable way to distinguish memorized recall from genuine reasoning on a single data point. You cannot prove non-contamination.
 
-If the answers are identical, it's likely recall. If they differ, the model is doing something beyond memorization.
+### Our Approach: Experimental Controls
 
-### How to Mitigate It
+Instead of trying to detect contamination, we design around it using standard experimental controls.
 
-1. **Acknowledge it.** The 11-20 game result has a contamination caveat. Report it honestly.
-2. **Test parameter variants.** Change the bonus from 20 to 10, change the range from 11-20 to 1-10, etc. No published human data exists for these variants, so the model can't recall.
-3. **Test on novel games.** We have 1,500 game configurations from the paper. If human response data becomes available (it's collected but not publicly released), those are clean tests.
+**Control 1 — Structural variants (no published data exists):**
 
-### Is the 11-20 Game Sufficient?
+Modify game parameters to create games with identical structure but no published human data. The model can't recall what doesn't exist.
 
-For a first result with contamination caveat: yes. It gives us concrete KL numbers to compare against the paper.
+| Variant | Range | Bonus | What changes theoretically |
+|---------|-------|-------|---------------------------|
+| Original | 11-20 | 20 | (published human data exists) |
+| Weak bonus | 11-20 | 10 | Weaker undercutting incentive → rightward shift |
+| Strong bonus | 11-20 | 50 | Stronger undercutting incentive → leftward shift |
+| Shifted range | 1-10 | 10 | Different numbers, same structure |
 
-For a valid scientific claim: no. We need games where the human data isn't in training. Parameter variants are our best bet without needing external human data.
+For each variant we compute Nash equilibrium and level-k predictions. Even without human data, we check:
+1. Does the model's prediction shift when parameters change? (If not → recalling regardless of input)
+2. Does it shift in the theoretically expected direction? (If yes → reasoning from game structure)
+3. Is it internally consistent? (Support makes sense, sums to 1)
+
+**Control 2 — Named vs. unnamed game:**
+
+Two conditions with identical rules:
+1. "Here is a game: [rules only]" (unnamed)
+2. "This is the Arad & Rubinstein (2012) 11-20 Money Request Game: [same rules]" (named)
+
+If naming shifts the prediction toward published data → contamination pathway exists and is active.
+If predictions are identical → model processes game structure, not metadata.
+
+**Control 3 — Theory comparison:**
+
+Compare whether the model's prediction correlates more with published empirical data or with theoretical predictions (Nash, level-k mixture). If closer to empirical than any theory produces → suspicious. If closer to theory → reasoning from structure.
+
+### Preliminary Evidence (subagent test, 2026-03-19)
+
+A Claude Opus subagent tested informally:
+- **Recall test:** Could NOT produce the published distribution. Got the modal choice wrong (said 20; actual is 17).
+- **Prediction test:** 35% on 20, 30% on 19 — classic level 0-1 reasoning.
+- **Actual humans:** 32% on 17, 30% on 18 — level 2-3 reasoning.
+
+This matches Gao et al. (2024) "Scylla Ex Machina" (arXiv:2410.19599), which found all advanced LLMs (including Claude 3) cluster at 19-20 on this game with near-0% instruction recall. Suggests the model is reasoning (poorly), not recalling. But one informal test is not rigorous evidence — the controls above are needed.
+
+### What This Means
+
+The original 11-20 game is a calibration point. Variants are where the clean evidence lives. The main finding of the project comes from variant results, not the original game.
 
 ## What Constitutes Cheating
 
@@ -95,10 +125,11 @@ This matters for the validity and interest of the result.
 
 | Condition | Input | Output | Method | What it tests |
 |-----------|-------|--------|--------|---------------|
-| Direct prediction | Game rules only | Full distribution (JSON) | 1 call | Explicit knowledge of human behavior |
+| Direct prediction (unnamed) | Game rules only | Full distribution (JSON) | 1 call | Explicit knowledge of human behavior |
+| Direct prediction (named) | Game rules + paper citation | Full distribution (JSON) | 1 call | Contamination: does naming shift prediction? |
+| Direct prediction (variants) | Variant rules only | Full distribution (JSON) | 1 call each | Reasoning vs recall (no published data exists) |
 | Bare role-play | Game rules, "you are a participant" | Single choice | N=50, temp=1 | Implicit behavioral priors |
 | Persona role-play | Paper's exact persona prompts | Single choice | N=50, temp=1 | Does persona pipeline still help? |
-| Contamination check | "What does the published data say?" | Distribution | 1 call | Is direct prediction just recall? |
 
 ## Models
 
@@ -125,15 +156,16 @@ This matters for the validity and interest of the result.
 
 ## Execution Order
 
-1. Contamination test (recall vs predict, 2 calls, free if using subscription)
-2. Direct prediction: Opus and Sonnet on 11-20 game
-3. Bare role-play: Opus and Sonnet (N=50 each)
-4. Compute metrics, compare to reference numbers
-5. If contamination detected: test on parameter variants (change bonus to 10, range to 1-10)
-6. Persona role-play using paper's exact prompts (if results from steps 2-3 are interesting)
-7. Write report and Twitter thread
+1. Direct prediction (unnamed): Opus on original 11-20 game — 1 call
+2. Direct prediction (named): Opus on same game with citation — 1 call
+3. Direct prediction (variants): Opus on 3 parameter variants — 3 calls
+4. Compute metrics, compare named/unnamed/variants to theory and published data
+5. Bare role-play: Opus on original game, N=50 — assess implicit vs explicit gap
+6. Repeat steps 1-5 with Sonnet (tests capability scaling)
+7. Persona role-play (if results from steps 1-5 are interesting)
+8. Write report and Twitter thread
 
-**Cost note:** Steps 1-2 require Anthropic API calls. Must get explicit cost approval from Jörn before running. Estimated cost for direct prediction: negligible (<$0.10). For sampling N=50: ~$1-2 at Opus pricing.
+**Cost note:** All calls can run via `claude -p` under Max subscription (officially supported by Anthropic TOS for automation via CLI). No paid API key needed. Steps 1-4 are ~7 calls total. Step 5 is 50 calls. Weekly token limits apply (Max = 20× Pro).
 
 ## What We Have
 
@@ -143,11 +175,11 @@ This matters for the validity and interest of the result.
 - 1,500 novel game configurations: pulled from Expected Parrot via EDSL
 - Paper TeX source with full methodology details
 
-### Code (built by subagent, needs review)
+### Code (reviewed, 25 tests passing)
 - src/games.py — 11-20 game definition with verified human data
-- src/simulate.py — direct prediction + sampling methods (default model needs fix)
-- src/metrics.py — KL, TV, log-likelihood (14 tests passing)
-- src/baselines.py — Nash, level-k, uniform
+- src/simulate.py — direct prediction + sampling methods (needs rewrite for `claude -p`)
+- src/metrics.py — KL, TV, log-likelihood (14 tests)
+- src/baselines.py — Nash, level-k, uniform (11 tests)
 - src/analysis.py — plotting and comparison
 
 ### Missing
@@ -156,9 +188,8 @@ This matters for the validity and interest of the result.
 
 ## Open Questions for Jörn
 
-1. **Budget for API calls:** Direct prediction is ~$0.10. Sampling (N=50 × 2 models) is ~$2. Full experiment including variants maybe $10-20. What's approved?
-2. **Contamination tolerance:** Is the 11-20 game result publishable with a contamination caveat, or do we need clean novel-game results?
-3. **Contact authors:** Should we email Manning & Horton asking for the human response data on the 1,500 games?
+1. **Contact authors:** Should we email Manning & Horton asking for the human response data on the 1,500 games? (Would give us clean ground truth for novel games.)
+2. **Scope of variant testing:** 3 variants sufficient, or more? (More variants = stronger evidence but more calls against Max weekly limit.)
 
 ## Deliverables
 
@@ -168,9 +199,9 @@ This matters for the validity and interest of the result.
 
 ## Priorities (cut from bottom)
 
-1. 11-20 game, direct prediction + contamination test, Claude Opus 4.6
-2. Add bare role-play, add Sonnet
-3. Test on parameter variants if contamination detected
-4. Add persona role-play condition
-5. Add GPT-4o
-6. Test on 1,500 novel games (requires human data)
+1. Direct prediction on original + variants + named/unnamed, Claude Opus 4.6 (core result)
+2. Add bare role-play on original game (explicit vs implicit comparison)
+3. Add Sonnet (capability scaling)
+4. Add persona role-play condition (is the pipeline still needed?)
+5. Add GPT-4o (direct paper comparison — requires API key)
+6. Test on 1,500 novel games (requires human data from authors)

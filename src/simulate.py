@@ -3,15 +3,19 @@
 Two methods:
 1. predict_distribution — asks the model to directly output a probability distribution
 2. sample_responses — calls the model N times with role-play, builds empirical distribution
+
+Two backends:
+- "cli": Uses `claude -p` (free under Max subscription). Default.
+- "sdk": Uses Anthropic Python SDK (requires ANTHROPIC_API_KEY, costs money).
 """
 
 import json
 import logging
 import re
+import shutil
+import subprocess
 import time
 from pathlib import Path
-
-import anthropic
 
 from src.games import Game
 
@@ -20,11 +24,18 @@ logger = logging.getLogger(__name__)
 RESULTS_DIR = Path(__file__).parent.parent / "results"
 
 DEFAULT_MODEL = "claude-opus-4-6"
+DEFAULT_BACKEND = "cli"
+
+# Locate the claude CLI binary (may be installed globally or via npx)
+_CLAUDE_BIN: str | None = shutil.which("claude")
 
 
-def _get_client() -> anthropic.Anthropic:
-    """Create an Anthropic client. Requires ANTHROPIC_API_KEY env var."""
-    return anthropic.Anthropic()
+def _claude_cmd() -> list[str]:
+    """Return the command prefix for invoking claude CLI."""
+    if _CLAUDE_BIN:
+        return [_CLAUDE_BIN]
+    # Fallback to npx
+    return ["npx", "@anthropic-ai/claude-code"]
 
 
 def _save_result(filename: str, data: dict) -> Path:
@@ -37,59 +48,170 @@ def _save_result(filename: str, data: dict) -> Path:
     return path
 
 
-def predict_distribution(
-    game: Game,
-    model: str = DEFAULT_MODEL,
-    prompt: str | None = None,
-    save: bool = True,
-) -> dict[int, float]:
-    """Ask the model to directly predict the human distribution as JSON.
+def _parse_json_from_text(raw_text: str) -> dict:
+    """Extract and parse a JSON object from model response text.
 
-    One API call. Returns a dict of action -> probability.
+    Handles: raw JSON, markdown code fences, surrounding prose.
     """
-    if prompt is None:
-        prompt = (
-            f"Here is a game: {game.description}\n\n"
-            f"What probability distribution over choices "
-            f"{{{', '.join(str(a) for a in game.action_space)}}} "
-            f"do you predict for human participants?\n\n"
-            f"Return ONLY a JSON object mapping each choice (as string key) "
-            f"to its probability (as a number between 0 and 1, summing to 1). "
-            f"Example format: {{\"11\": 0.05, \"12\": 0.03, ...}}"
-        )
-
-    client = _get_client()
-    response = client.messages.create(
-        model=model,
-        max_tokens=1024,
-        temperature=0,  # Direct prediction: we want the model's best estimate
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    raw_text = response.content[0].text
-    logger.info(f"Raw response (predict_distribution): {raw_text[:500]}")
-
-    # Parse JSON from response (handle markdown code blocks)
     text = raw_text.strip()
+
+    # Try extracting from code fences first
     if "```" in text:
-        # Extract content between code fences
         match = re.search(r"```(?:\s*json)?\s*\n(.*?)\n?```", text, re.DOTALL)
         if match:
             text = match.group(1).strip()
 
-    parsed = json.loads(text)
-    distribution = {int(k): float(v) for k, v in parsed.items()}
+    # Try parsing as-is
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
 
-    # Normalize to sum to 1
+    # Try finding a JSON object in the text
+    match = re.search(r"\{[^{}]*\}", text)
+    if match:
+        return json.loads(match.group())
+
+    raise ValueError(f"Could not parse JSON from response: {raw_text[:200]}")
+
+
+def _normalize_distribution(raw: dict, action_space: list[int]) -> dict[int, float]:
+    """Convert parsed JSON to a normalized distribution over the action space."""
+    distribution = {int(k): float(v) for k, v in raw.items()}
     total = sum(distribution.values())
     if total > 0:
         distribution = {k: v / total for k, v in distribution.items()}
+    return distribution
+
+
+# ---------------------------------------------------------------------------
+# CLI backend (claude -p, free under Max subscription)
+# ---------------------------------------------------------------------------
+
+
+def _call_cli(
+    prompt: str,
+    model: str = DEFAULT_MODEL,
+    system_prompt: str | None = None,
+    timeout: int = 180,
+) -> str:
+    """Call claude -p and return the raw text response."""
+    cmd = [
+        *_claude_cmd(),
+        "-p",
+        "--model", model,
+        "--tools", "",  # Disable all tools — just answer the question
+        "--output-format", "text",
+        "--no-session-persistence",
+    ]
+    if system_prompt:
+        cmd.extend(["--system-prompt", system_prompt])
+
+    logger.info(f"Calling claude -p with model={model}")
+    result = subprocess.run(
+        cmd,
+        input=prompt,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"claude -p exited with code {result.returncode}: {result.stderr[:500]}"
+        )
+
+    return result.stdout
+
+
+# ---------------------------------------------------------------------------
+# SDK backend (Anthropic Python SDK, requires API key)
+# ---------------------------------------------------------------------------
+
+
+def _call_sdk(
+    prompt: str,
+    model: str = DEFAULT_MODEL,
+    temperature: float = 0,
+    max_tokens: int = 1024,
+) -> str:
+    """Call Anthropic API via Python SDK and return the raw text response."""
+    import anthropic
+
+    client = anthropic.Anthropic()
+    response = client.messages.create(
+        model=model,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def _default_predict_prompt(game: Game) -> str:
+    """Default prompt for direct distribution prediction."""
+    return (
+        f"Here is a game: {game.description}\n\n"
+        f"What probability distribution over choices "
+        f"{{{', '.join(str(a) for a in game.action_space)}}} "
+        f"do you predict for human participants?\n\n"
+        f"Return ONLY a JSON object mapping each choice (as string key) "
+        f"to its probability (as a number between 0 and 1, summing to 1). "
+        f"Example format: {{\"11\": 0.05, \"12\": 0.03, ...}}"
+    )
+
+
+def _default_sample_prompt(game: Game) -> str:
+    """Default prompt for sampling a single choice."""
+    return (
+        "You are answering questions as if you were a human. "
+        "Do not break character.\n\n"
+        f"{game.description}\n\n"
+        "What amount of money would you request? "
+        "Reply with just the number."
+    )
+
+
+def predict_distribution(
+    game: Game,
+    model: str = DEFAULT_MODEL,
+    prompt: str | None = None,
+    backend: str = DEFAULT_BACKEND,
+    save: bool = True,
+) -> dict[int, float]:
+    """Ask the model to directly predict the human distribution as JSON.
+
+    One call. Returns a dict of action -> probability.
+
+    Args:
+        backend: "cli" (claude -p, free under Max) or "sdk" (API key, costs money).
+    """
+    if prompt is None:
+        prompt = _default_predict_prompt(game)
+
+    if backend == "cli":
+        raw_text = _call_cli(prompt, model=model)
+    elif backend == "sdk":
+        raw_text = _call_sdk(prompt, model=model, temperature=0)
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+    logger.info(f"Raw response (predict_distribution): {raw_text[:500]}")
+
+    parsed = _parse_json_from_text(raw_text)
+    distribution = _normalize_distribution(parsed, game.action_space)
 
     if save:
         _save_result(
             f"predict_{model}_{game.name.replace(' ', '_')}_{int(time.time())}.json",
             {
                 "method": "predict_distribution",
+                "backend": backend,
                 "model": model,
                 "game": game.name,
                 "prompt": prompt,
@@ -131,37 +253,35 @@ def sample_responses(
     prompt: str | None = None,
     n: int = 50,
     temperature: float = 1.0,
+    backend: str = DEFAULT_BACKEND,
     save: bool = True,
 ) -> dict[int, float]:
     """Call the model N times with a role-play prompt, build empirical distribution.
 
     Each call asks the model to play the game as a human participant.
     Responses are parsed to extract integer choices.
+
+    Note: CLI backend ignores the temperature parameter (claude -p has no
+    temperature control). Variance comes from the model's internal sampling.
     """
     if prompt is None:
-        prompt = (
-            "You are answering questions as if you were a human. "
-            "Do not break character.\n\n"
-            f"{game.description}\n\n"
-            "What amount of money would you request? "
-            "Reply with just the number."
-        )
+        prompt = _default_sample_prompt(game)
 
-    client = _get_client()
     raw_responses: list[str] = []
     parsed_actions: list[int | None] = []
     failures = 0
 
     for i in range(n):
-        response = client.messages.create(
-            model=model,
-            max_tokens=256,
-            temperature=temperature,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = response.content[0].text
-        raw_responses.append(raw)
+        if backend == "cli":
+            raw = _call_cli(prompt, model=model)
+        elif backend == "sdk":
+            raw = _call_sdk(
+                prompt, model=model, temperature=temperature, max_tokens=256
+            )
+        else:
+            raise ValueError(f"Unknown backend: {backend}")
 
+        raw_responses.append(raw)
         action = _parse_action(raw, game.action_space)
         parsed_actions.append(action)
         if action is None:
@@ -186,13 +306,14 @@ def sample_responses(
             f"sample_{model}_{game.name.replace(' ', '_')}_{int(time.time())}.json",
             {
                 "method": "sample_responses",
+                "backend": backend,
                 "model": model,
                 "game": game.name,
                 "prompt": prompt,
                 "n_requested": n,
                 "n_valid": len(valid),
                 "n_failures": failures,
-                "temperature": temperature,
+                "temperature": temperature if backend == "sdk" else None,
                 "raw_responses": raw_responses,
                 "parsed_actions": parsed_actions,
                 "distribution": {str(k): v for k, v in distribution.items()},
@@ -216,9 +337,9 @@ if __name__ == "__main__":
     assert _parse_action("banana", game.action_space) is None
     print("Parsing tests passed.")
 
-    # Uncomment to run actual API calls:
-    # dist = predict_distribution(game)
-    # print(f"Direct prediction: {dist}")
+    # Uncomment to run actual experiments:
+    # dist = predict_distribution(game, backend="cli")
+    # print(f"Direct prediction (CLI): {dist}")
     #
-    # dist = sample_responses(game, n=5)
-    # print(f"Sampled distribution (n=5): {dist}")
+    # dist = predict_distribution(game, backend="sdk")
+    # print(f"Direct prediction (SDK): {dist}")

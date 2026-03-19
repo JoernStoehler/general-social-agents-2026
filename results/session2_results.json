@@ -1,0 +1,100 @@
+{
+  "session": 2,
+  "date": "2026-03-19",
+  "model": "claude-opus-4-6",
+  "backend": "claude-p (npx @anthropic-ai/claude-code -p)",
+  "environment": "clean /tmp directory, no CLAUDE.md, CLAUDE_CODE_DISABLE_AUTO_MEMORY=1",
+  "system_context": {
+    "prepended_by_claude_code": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+    "date_injection": "system-reminder with current date injected into user message",
+    "thinking_mode": "adaptive",
+    "effort": "high",
+    "max_tokens": 64000
+  },
+  "eleven_twenty_game": {
+    "description": "Direct prediction of human distribution on Arad & Rubinstein (2012) 11-20 Money Request Game",
+    "human_data": {"11": 0.04, "12": 0.00, "13": 0.03, "14": 0.06, "15": 0.01, "16": 0.06, "17": 0.32, "18": 0.30, "19": 0.12, "20": 0.06},
+    "conditions": {
+      "unnamed_b20": {
+        "prompt": "Game rules only, bonus=20, no paper citation",
+        "prediction": {"11": 0.01, "12": 0.01, "13": 0.02, "14": 0.03, "15": 0.05, "16": 0.07, "17": 0.11, "18": 0.15, "19": 0.20, "20": 0.35},
+        "kl_divergence": 0.731,
+        "notes": "Model cited Arad & Rubinstein (2012) unprompted. Predicted peak at 20 (35%), humans peak at 17 (32%)."
+      },
+      "weak_bonus_b10": {
+        "prompt": "Same structure, bonus=10 (no published human data)",
+        "prediction": {"11": 0.01, "12": 0.01, "13": 0.02, "14": 0.02, "15": 0.05, "16": 0.05, "17": 0.09, "18": 0.15, "19": 0.30, "20": 0.30},
+        "kl_vs_original_human": 0.751,
+        "notes": "Model cited A&R despite different parameters. 60% at 19-20."
+      },
+      "strong_bonus_b50": {
+        "prompt": "Same structure, bonus=50 (no published human data)",
+        "prediction": {"11": 0.005, "12": 0.005, "13": 0.01, "14": 0.01, "15": 0.02, "16": 0.03, "17": 0.07, "18": 0.15, "19": 0.35, "20": 0.35},
+        "kl_vs_original_human": 0.824,
+        "notes": "Model cited A&R. 70% at 19-20. Shifted WRONG direction (more mass at top with stronger undercutting incentive)."
+      },
+      "named_b20": {
+        "prompt": "Same rules + explicit paper citation (Arad & Rubinstein 2012, AER)",
+        "prediction": {"11": 0.02, "12": 0.01, "13": 0.02, "14": 0.03, "15": 0.05, "16": 0.04, "17": 0.07, "18": 0.12, "19": 0.28, "20": 0.36},
+        "kl_divergence": 0.872,
+        "notes": "Named condition slightly worse than unnamed. 64% at 19-20."
+      },
+      "full_system_b20": {
+        "prompt": "Default system prompt, tools enabled, read prompt from file",
+        "prediction": {"11": 0.005, "12": 0.005, "13": 0.01, "14": 0.02, "15": 0.03, "16": 0.05, "17": 0.08, "18": 0.15, "19": 0.30, "20": 0.35},
+        "kl_divergence": 0.746,
+        "notes": "Full system slightly worse. 65% at 19-20."
+      }
+    },
+    "reference_baselines": {
+      "gpt4o_raw_paper": {"kl": 2.7, "source": "Manning & Horton 2026"},
+      "uniform_random": {"kl": 2.423},
+      "paper_optimized_ensemble": {"kl": 0.30, "source": "Manning & Horton 2026"}
+    }
+  },
+  "charness_rabin_games": {
+    "description": "Predictions on 20 two-stage dictator games from Charness & Rabin (2002), data verified from Manning & Horton Table D2",
+    "method": "All 20 games in single batched prompt",
+    "results": {
+      "player_a": {
+        "correlation": 0.731,
+        "mean_absolute_error": 0.142,
+        "mean_kl_divergence": 0.073
+      },
+      "player_b": {
+        "correlation": 0.826,
+        "mean_absolute_error": 0.138,
+        "mean_kl_divergence": 0.086
+      }
+    },
+    "predictions": {
+      "Barc7":  {"a_out": 0.60, "b_left": 0.48, "human_a_out": 0.47, "human_b_left": 0.06},
+      "Barc5":  {"a_out": 0.50, "b_left": 0.48, "human_a_out": 0.39, "human_b_left": 0.33},
+      "Berk28": {"a_out": 0.32, "b_left": 0.40, "human_a_out": 0.50, "human_b_left": 0.34},
+      "Berk32": {"a_out": 0.72, "b_left": 0.42, "human_a_out": 0.85, "human_b_left": 0.35},
+      "Barc3":  {"a_out": 0.62, "b_left": 0.62, "human_a_out": 0.74, "human_b_left": 0.62},
+      "Barc4":  {"a_out": 0.70, "b_left": 0.62, "human_a_out": 0.83, "human_b_left": 0.62},
+      "Berk21": {"a_out": 0.65, "b_left": 0.62, "human_a_out": 0.47, "human_b_left": 0.61},
+      "Barc6":  {"a_out": 0.65, "b_left": 0.58, "human_a_out": 0.92, "human_b_left": 0.75},
+      "Barc9":  {"a_out": 0.55, "b_left": 0.62, "human_a_out": 0.69, "human_b_left": 0.94},
+      "Berk25": {"a_out": 0.55, "b_left": 0.62, "human_a_out": 0.62, "human_b_left": 0.81},
+      "Berk19": {"a_out": 0.62, "b_left": 0.42, "human_a_out": 0.56, "human_b_left": 0.22},
+      "Berk14": {"a_out": 0.72, "b_left": 0.42, "human_a_out": 0.68, "human_b_left": 0.45},
+      "Barc1":  {"a_out": 0.55, "b_left": 0.62, "human_a_out": 0.96, "human_b_left": 0.93},
+      "Berk13": {"a_out": 0.55, "b_left": 0.62, "human_a_out": 0.86, "human_b_left": 0.82},
+      "Berk18": {"a_out": 0.08, "b_left": 0.48, "human_a_out": 0.00, "human_b_left": 0.44},
+      "Barc11": {"a_out": 0.42, "b_left": 0.72, "human_a_out": 0.54, "human_b_left": 0.89},
+      "Berk22": {"a_out": 0.48, "b_left": 0.72, "human_a_out": 0.39, "human_b_left": 0.97},
+      "Berk27": {"a_out": 0.45, "b_left": 0.82, "human_a_out": 0.41, "human_b_left": 0.91},
+      "Berk31": {"a_out": 0.68, "b_left": 0.82, "human_a_out": 0.73, "human_b_left": 0.88},
+      "Berk30": {"a_out": 0.58, "b_left": 0.85, "human_a_out": 0.77, "human_b_left": 0.88}
+    },
+    "key_observations": [
+      "Model tends to predict proportions closer to 0.5 than actual human data (regression to mean)",
+      "8/20 Player B predictions are exactly 0.62 — suggests default heuristic, not per-game reasoning",
+      "Model misses extreme human behavior badly (Barc7 B: predicted 0.48, actual 0.06; Barc9 B: predicted 0.62, actual 0.94)",
+      "But gets direction right most of the time (r=0.73 for A, r=0.83 for B)",
+      "Despite Charness-Rabin (2002) being famous (5000+ citations), model doesn't seem to have memorized game-specific proportions"
+    ]
+  }
+}
