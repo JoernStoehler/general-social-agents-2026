@@ -59,13 +59,13 @@ The model cited Arad & Rubinstein for *all* conditions, including variants with 
 
 #### Charness-Rabin Games (20 games)
 
-Best results across prompt versions (V3, engineered prompt):
+Results with spoiler-free prompt (system + learnings + game descriptions):
 
 | Metric | Player A | Player B |
 |--------|:---:|:---:|
-| Correlation with human data | 0.76 | 0.81 |
-| Mean absolute error | 0.13 | 0.14 |
-| Mean KL divergence | 0.07 | 0.08 |
+| Correlation with human data | 0.79 | 0.85 |
+| Mean absolute error | 0.12 | 0.13 |
+| Mean KL divergence | 0.06 | 0.08 |
 
 The model gets the direction right — it understands which games produce more extreme choices. But it systematically **regresses predictions toward moderate values**. When humans show strong preferences (>85% choosing one option), the model typically predicts only 60-70%.
 

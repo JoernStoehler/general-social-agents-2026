@@ -1,0 +1,24 @@
+```json
+[
+  {"game": "Barc7", "out": 0.46, "enter": 0.54, "left": 0.27, "right": 0.73},
+  {"game": "Barc5", "out": 0.63, "enter": 0.37, "left": 0.27, "right": 0.73},
+  {"game": "Berk28", "out": 0.72, "enter": 0.28, "left": 0.06, "right": 0.94},
+  {"game": "Berk32", "out": 0.90, "enter": 0.10, "left": 0.06, "right": 0.94},
+  {"game": "Barc3", "out": 0.62, "enter": 0.38, "left": 0.73, "right": 0.27},
+  {"game": "Barc4", "out": 0.78, "enter": 0.22, "left": 0.73, "right": 0.27},
+  {"game": "Berk21", "out": 0.64, "enter": 0.36, "left": 0.73, "right": 0.27},
+  {"game": "Barc6", "out": 0.66, "enter": 0.34, "left": 0.43, "right": 0.57},
+  {"game": "Barc9", "out": 0.56, "enter": 0.44, "left": 0.70, "right": 0.30},
+  {"game": "Berk25", "out": 0.56, "enter": 0.44, "left": 0.68, "right": 0.32},
+  {"game": "Berk19", "out": 0.68, "enter": 0.32, "left": 0.33, "right": 0.67},
+  {"game": "Berk14", "out": 0.85, "enter": 0.15, "left": 0.38, "right": 0.62},
+  {"game": "Barc1", "out": 0.78, "enter": 0.22, "left": 0.73, "right": 0.27},
+  {"game": "Berk13", "out": 0.77, "enter": 0.23, "left": 0.73, "right": 0.27},
+  {"game": "Berk18", "out": 0.06, "enter": 0.94, "left": 0.44, "right": 0.56},
+  {"game": "Barc11", "out": 0.58, "enter": 0.42, "left": 0.95, "right": 0.05},
+  {"game": "Berk22", "out": 0.56, "enter": 0.44, "left": 0.95, "right": 0.05},
+  {"game": "Berk27", "out": 0.42, "enter": 0.58, "left": 0.93, "right": 0.07},
+  {"game": "Berk31", "out": 0.87, "enter": 0.13, "left": 0.93, "right": 0.07},
+  {"game": "Berk30", "out": 0.93, "enter": 0.07, "left": 0.93, "right": 0.07}
+]
+```
