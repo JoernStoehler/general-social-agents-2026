@@ -1,25 +1,34 @@
 #!/bin/bash
-# Run an experiment: concatenates prompt files and passes directly to claude -p.
+# Run an experiment: concatenate prompt files and pass to Claude CLI.
 #
-# Usage: ./run_experiment.sh <prompt_files...>
-#   Files are concatenated in order and passed as the prompt.
+# Concatenates the given prompt files in order, appends a JSON-only output
+# instruction, and runs the result through `claude -p`. Saves the full
+# prompt, the list of input files, and the model output to results/runs/.
+#
+# Runs from /tmp to avoid CLAUDE.md influencing the model.
+#
+# Usage:
+#   scripts/run_experiment.sh <prompt_files...>
 #
 # Examples:
-#   ./run_experiment.sh prompts/task.md prompts/learnings.md prompts/game_1120_desc.md
-#   ./run_experiment.sh prompts/task.md prompts/learnings.md prompts/games_cr.md
+#   scripts/run_experiment.sh prompts/task.md prompts/learnings.md prompts/game_1120_desc.md
+#   scripts/run_experiment.sh prompts/task.md prompts/learnings.md prompts/games_cr.md
 
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CLAUDE_BIN="${CLAUDE_BIN:-$(which claude 2>/dev/null || echo "/home/codespace/.vscode-remote/extensions/anthropic.claude-code-2.1.79-linux-x64/resources/native-binary/claude")}"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 
 if [ $# -eq 0 ]; then
-    echo "Usage: ./run_experiment.sh <prompt_files...>"
+    echo "Usage: scripts/run_experiment.sh <prompt_files...>"
+    echo ""
+    echo "Concatenates prompt files and passes them to claude -p."
+    echo "Results saved to results/runs/<timestamp>/."
     exit 1
 fi
 
-# Concatenate all prompt files
+# Concatenate all prompt files with --- separators
 PROMPT=""
 for f in "$@"; do
     PROMPT="${PROMPT}$(cat "$REPO_DIR/$f")

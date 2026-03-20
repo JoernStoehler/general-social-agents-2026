@@ -2,60 +2,58 @@
 """Audit prompt files for ground truth leakage (spoilers).
 
 Checks prompt files for numbers, percentages, and phrases that could leak
-human experimental data into prediction prompts — which would contaminate
+human experimental data into prediction prompts -- which would contaminate
 any evaluation of LLM prediction ability.
 
 Data sources checked:
-  - 11-20 game human distribution (Arad & Rubinstein 2012)
-  - Charness-Rabin game human proportions (from src/cr_games.py)
+    - 11-20 game human distribution (Arad & Rubinstein 2012)
+    - Charness-Rabin game human proportions (from data/cr_games.py)
+
+Exit codes:
+    0 = clean (no flags)
+    1 = flags found
+    2 = error (e.g. prompts/ not found)
 
 Usage:
-    python3 src/audit_spoilers.py                      # defaults to prompts/**
-    python3 src/audit_spoilers.py prompts/**/*.md
-    python3 src/audit_spoilers.py prompts/1120/prompt.md prompts/cr/games.md
+    python3 scripts/audit_spoilers.py                  # defaults to prompts/
+    python3 scripts/audit_spoilers.py prompts/
+    python3 scripts/audit_spoilers.py prompts/task.md prompts/games_cr.md
 """
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Ground truth data
+# Ground truth data (must not appear in prediction prompts)
 # ---------------------------------------------------------------------------
 
-# 11-20 game: human distribution from Arad & Rubinstein (2012)
+# 11-20 game: human distribution from Arad & Rubinstein (2012), Table 1
 HUMAN_1120: dict[int, float] = {
-    11: 0.04,
-    12: 0.00,
-    13: 0.03,
-    14: 0.06,
-    15: 0.01,
-    16: 0.06,
-    17: 0.32,
-    18: 0.30,
-    19: 0.12,
-    20: 0.06,
+    11: 0.04, 12: 0.00, 13: 0.03, 14: 0.06, 15: 0.01,
+    16: 0.06, 17: 0.32, 18: 0.30, 19: 0.12, 20: 0.06,
 }
 
-# Charness-Rabin games: human proportions (from cr_games.py)
-# Collected as (game_name, human_out, human_enter, human_left, human_right)
+# Charness-Rabin games: human proportions from data/cr_games.py
+# Format: (game_name, human_out, human_enter, human_left, human_right)
 CR_HUMAN_PROPORTIONS: list[tuple[str, float, float, float, float]] = [
-    ("Barc7", 0.47, 0.53, 0.06, 0.94),
-    ("Barc5", 0.39, 0.61, 0.33, 0.67),
+    ("Barc7",  0.47, 0.53, 0.06, 0.94),
+    ("Barc5",  0.39, 0.61, 0.33, 0.67),
     ("Berk28", 0.50, 0.50, 0.34, 0.66),
     ("Berk32", 0.85, 0.15, 0.35, 0.65),
-    ("Barc3", 0.74, 0.26, 0.62, 0.38),
-    ("Barc4", 0.83, 0.17, 0.62, 0.38),
+    ("Barc3",  0.74, 0.26, 0.62, 0.38),
+    ("Barc4",  0.83, 0.17, 0.62, 0.38),
     ("Berk21", 0.47, 0.53, 0.61, 0.39),
-    ("Barc6", 0.92, 0.08, 0.75, 0.25),
-    ("Barc9", 0.69, 0.31, 0.94, 0.06),
+    ("Barc6",  0.92, 0.08, 0.75, 0.25),
+    ("Barc9",  0.69, 0.31, 0.94, 0.06),
     ("Berk25", 0.62, 0.38, 0.81, 0.19),
     ("Berk19", 0.56, 0.44, 0.22, 0.78),
     ("Berk14", 0.68, 0.32, 0.45, 0.55),
-    ("Barc1", 0.96, 0.04, 0.93, 0.07),
+    ("Barc1",  0.96, 0.04, 0.93, 0.07),
     ("Berk13", 0.86, 0.14, 0.82, 0.18),
     ("Berk18", 0.00, 1.00, 0.44, 0.56),
     ("Barc11", 0.54, 0.46, 0.89, 0.11),
@@ -66,19 +64,19 @@ CR_HUMAN_PROPORTIONS: list[tuple[str, float, float, float, float]] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Build lookup sets
+# Build lookup sets of suspicious values
 # ---------------------------------------------------------------------------
 
-# Collect all distinctive human proportions as decimal strings and percentages.
-# Exclude very common values (0.00, 1.00, 0.50) that appear in normal text.
+# Values too common to be meaningful signals
 TRIVIAL_PROPORTIONS = {0.00, 1.00, 0.50, 0.25, 0.75}
 
 
 def _build_suspicious_numbers() -> tuple[set[str], set[str]]:
-    """Return (decimal_strings, percentage_strings) of human data values.
+    """Build sets of decimal and percentage strings from human data.
 
-    Decimal strings like "0.32", percentage strings like "32%".
-    Excludes trivially common values.
+    Returns:
+        (decimal_strings, percentage_strings) -- e.g. {"0.32", ...}, {"32%", ...}.
+        Excludes trivially common values like 0.50 or 50%.
     """
     decimals: set[str] = set()
     percentages: set[str] = set()
@@ -105,7 +103,10 @@ def _build_suspicious_numbers() -> tuple[set[str], set[str]]:
 
 SUSPICIOUS_DECIMALS, SUSPICIOUS_PERCENTAGES = _build_suspicious_numbers()
 
-# Phrases that, near numbers, suggest ground truth leakage
+# ---------------------------------------------------------------------------
+# Leakage phrase patterns
+# ---------------------------------------------------------------------------
+
 LEAKAGE_PHRASES = [
     r"in\s+reality",
     r"actual\s+data",
@@ -123,25 +124,28 @@ LEAKAGE_PHRASES = [
     r"human\s+choices?\s+(?:were|was|are|is)",
 ]
 
-LEAKAGE_RE = re.compile(
-    r"|".join(LEAKAGE_PHRASES),
-    re.IGNORECASE,
-)
+LEAKAGE_RE = re.compile(r"|".join(LEAKAGE_PHRASES), re.IGNORECASE)
 
-# Pattern for the full 11-20 distribution (e.g. {11: 0.04, 12: 0.00, ...})
-# Detects a JSON/dict-like structure with at least 3 entries from 11-20 range
+# Pattern for a full distribution dict (e.g. {11: 0.04, 12: 0.00, ...})
 DIST_PATTERN = re.compile(
     r"[{\[]\s*"
     r'(?:"?1[1-9]"?\s*[:=]\s*0?\.\d+\s*[,;]\s*){3,}'
 )
 
+# File extensions worth scanning
+SCANNABLE_SUFFIXES = {
+    ".md", ".txt", ".json", ".yaml", ".yml", ".py",
+    ".j2", ".jinja", ".jinja2", ".tmpl", ".template", ".prompt",
+}
 
 # ---------------------------------------------------------------------------
-# Scanning logic
+# Scanning
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Flag:
+    """A single spoiler indicator found in a file."""
     file: str
     line_no: int
     text: str
@@ -186,22 +190,20 @@ def scan_file(path: Path) -> list[Flag]:
                     f"Contains suspicious percentage {pct} matching human data",
                 ))
 
-        # Check 4: Leakage phrases near any number
+        # Check 4: Leakage phrases near any number on the same line
         if LEAKAGE_RE.search(line) and re.search(r"\d", line):
             flags.append(Flag(
                 str(path), line_no, line.strip(),
                 "Leakage phrase near a number",
             ))
 
-    # Check 5: Multi-line context — leakage phrase within 3 lines of a number
+    # Check 5: Leakage phrase within 3 lines of a suspicious value
     for line_no_0, line in enumerate(lines):
         if not LEAKAGE_RE.search(line):
             continue
-        # Look at surrounding lines for numbers
         start = max(0, line_no_0 - 3)
         end = min(len(lines), line_no_0 + 4)
         context = "\n".join(lines[start:end])
-        # Check for suspicious decimals or percentages in context
         for dec in SUSPICIOUS_DECIMALS:
             if dec in context and dec not in line:
                 flags.append(Flag(
@@ -224,23 +226,31 @@ def scan_file(path: Path) -> list[Flag]:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Audit prompt files for ground truth leakage (spoilers)."
+    )
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        default=[],
+        help="Files or directories to scan (default: prompts/)",
+    )
+    args = parser.parse_args()
+
     # Determine files to scan
-    if len(sys.argv) > 1:
-        paths = []
-        for arg in sys.argv[1:]:
+    if args.paths:
+        paths: list[Path] = []
+        for arg in args.paths:
             p = Path(arg)
             if p.is_file():
                 paths.append(p)
             elif p.is_dir():
                 paths.extend(sorted(p.rglob("*")))
             else:
-                # Might be a glob that the shell didn't expand (no matches)
                 print(f"Warning: {arg} is not a file or directory, skipping")
-        paths = [p for p in paths if p.is_file() and p.suffix in (
-            ".md", ".txt", ".json", ".yaml", ".yml", ".py", ".j2", ".jinja",
-            ".jinja2", ".tmpl", ".template", ".prompt",
-        )]
+        paths = [p for p in paths if p.is_file() and p.suffix in SCANNABLE_SUFFIXES]
     else:
         prompts_dir = Path("prompts")
         if not prompts_dir.exists():

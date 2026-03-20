@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
-"""Extract a readable summary from a Claude Code JSONL session file.
+"""Extract a readable summary from Claude Code JSONL session logs.
 
-Usage: python3 src/extract_session.py results/sessions/<session>.jsonl
+Parses the structured JSONL format written by Claude Code sessions and
+prints a human-readable summary showing user messages, assistant responses,
+thinking blocks, and tool calls.
+
+Usage:
+    python3 scripts/extract_session.py results/sessions/abc123.jsonl
+    python3 scripts/extract_session.py session1.jsonl session2.jsonl
 """
 
+import argparse
 import json
 import sys
 import textwrap
 
 
 def truncate(text: str, limit: int) -> str:
-    """Truncate text to limit chars, adding ellipsis if needed."""
+    """Truncate text to *limit* chars, adding '[...]' if needed."""
     text = text.strip()
     if len(text) <= limit:
         return text
@@ -18,7 +25,7 @@ def truncate(text: str, limit: int) -> str:
 
 
 def format_tool_input(input_data: dict) -> str:
-    """Format tool call input as a brief summary."""
+    """Format a tool call's input dict as a brief key=value summary."""
     parts = []
     for key, val in input_data.items():
         val_str = str(val)
@@ -29,7 +36,10 @@ def format_tool_input(input_data: dict) -> str:
 
 
 def extract_content_text(content) -> str:
-    """Extract plain text from a tool_result content field (string or structured)."""
+    """Extract plain text from a tool_result content field.
+
+    Handles both plain strings and structured [{type: "text", text: ...}] lists.
+    """
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -58,7 +68,7 @@ def process_session(path: str) -> None:
         except json.JSONDecodeError:
             print(f"  [warning: skipped malformed JSON on line {line_no}]")
 
-    # Header
+    # Print session header
     session_id = None
     for entry in entries:
         if "sessionId" in entry:
@@ -71,7 +81,7 @@ def process_session(path: str) -> None:
     for entry in entries:
         entry_type = entry.get("type")
 
-        # --- Queue operations (show the initial prompt) ---
+        # --- Queue operations (initial prompt) ---
         if entry_type == "queue-operation" and entry.get("operation") == "enqueue":
             content = entry.get("content", "")
             if content:
@@ -86,7 +96,6 @@ def process_session(path: str) -> None:
             if content is None:
                 continue
 
-            # Plain text user message
             if isinstance(content, str):
                 msg_count += 1
                 print(f"\n--- USER [{msg_count}] ---")
@@ -99,10 +108,9 @@ def process_session(path: str) -> None:
                     if isinstance(item, dict) and item.get("type") == "tool_result":
                         tool_id = item.get("tool_use_id", "?")
                         result_text = extract_content_text(item.get("content", ""))
-                        # Strip line-number prefixes from Read results
+                        # Strip line-number prefixes from Read tool results
                         clean_lines = []
                         for rline in result_text.split("\n"):
-                            # Pattern: spaces + digits + arrow/tab + content
                             stripped = rline
                             if "\u2192" in rline:
                                 stripped = rline.split("\u2192", 1)[-1]
@@ -123,21 +131,18 @@ def process_session(path: str) -> None:
                     continue
                 block_type = block.get("type")
 
-                # Thinking
                 if block_type == "thinking":
                     thinking = block.get("thinking", "")
                     if thinking:
                         print(f"\n    THINKING ({model}):")
                         print(textwrap.indent(truncate(thinking, 500), "        "))
 
-                # Text response
                 elif block_type == "text":
                     text = block.get("text", "").strip()
                     if text:
                         print(f"\n    RESPONSE ({model}):")
                         print(textwrap.indent(text, "        "))
 
-                # Tool use
                 elif block_type == "tool_use":
                     name = block.get("name", "?")
                     inp = block.get("input", {})
@@ -145,15 +150,21 @@ def process_session(path: str) -> None:
 
             continue
 
-        # Skip: file-history-snapshot, queue-operation dequeue, last-prompt, etc.
+        # Skip other entry types: file-history-snapshot, dequeue, last-prompt, etc.
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 src/extract_session.py <session.jsonl> [session2.jsonl ...]")
-        sys.exit(1)
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Extract readable summaries from Claude Code JSONL session logs."
+    )
+    parser.add_argument(
+        "sessions",
+        nargs="+",
+        help="One or more .jsonl session files to process",
+    )
+    args = parser.parse_args()
 
-    for i, path in enumerate(sys.argv[1:]):
+    for i, path in enumerate(args.sessions):
         if i > 0:
             print("\n" + "=" * 70 + "\n")
         process_session(path)
