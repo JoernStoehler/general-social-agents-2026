@@ -38,7 +38,7 @@ Claude Opus 4.6 via `claude -p` (Claude Code CLI, pipe mode). One call per game 
 
 The prompt encodes behavioral economics knowledge (level-k reasoning, social preferences, bounded rationality) and describes the experiment completely. This is legitimate system design — like programming a tool with domain knowledge — not data leakage. A [spoiler audit](.claude/agents/audit-spoilers.md) verified no ground truth leaked into prompts.
 
-Human data: Arad & Rubinstein (2012) AER for the 11-20 game; Charness & Rabin (2002) QJE via Manning & Horton (2026) Table D2 for the CR games.
+Human data: Charness & Rabin (2002) QJE via Manning & Horton (2026) Table D2.
 
 ## Repo structure
 
@@ -56,7 +56,7 @@ twitter_thread.md Thread draft
 
 ```bash
 pip install -r requirements.txt
-scripts/run_experiment.sh prompts/game_1120.md
+scripts/run_experiment.sh prompts/task.md prompts/learnings.md prompts/games_cr.md
 python3 scripts/eval_cr.py results/runs/20260320_101421/output.txt
 python3 scripts/extract_session.py results/sessions/*.jsonl
 ```
@@ -64,5 +64,4 @@ python3 scripts/extract_session.py results/sessions/*.jsonl
 ## References
 
 - Manning & Horton (2026), "General Social Agents," arXiv:2508.17407
-- Arad & Rubinstein (2012), "The 11-20 Money Request Game," AER 102(7)
 - Charness & Rabin (2002), "Understanding Social Preferences," QJE 117(3)
