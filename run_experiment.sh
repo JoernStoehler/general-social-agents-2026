@@ -5,9 +5,8 @@
 #   Files are concatenated in order and passed as the prompt.
 #
 # Examples:
-#   ./run_experiment.sh prompts/shared/task.md prompts/shared/reasoning_guide.md prompts/1120/game.md prompts/shared/format.md
-#   ./run_experiment.sh prompts/1120/prompt.md
-#   ./run_experiment.sh prompts/cr/prompt.md prompts/shared/task.md prompts/shared/reasoning_guide.md
+#   ./run_experiment.sh prompts/shared/system.md prompts/shared/learnings.md prompts/1120/game.md
+#   ./run_experiment.sh prompts/shared/system.md prompts/shared/learnings.md prompts/cr/games.md
 
 set -euo pipefail
 

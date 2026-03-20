@@ -43,7 +43,7 @@
 - 1-7 game: modal response = 5, with most other choices on 4, 6, and 7
 - Manning & Horton (2026) state these data were preregistered and collected from Prolific; data to be posted at http://www.benjaminmanning.io/
 
-**Status:** Exact per-choice counts for the original AR 2012 N=108 dataset need verification from the primary paper's Table 1. The openICPSR data file (project 112576) should have the raw data.
+**Status:** AR 2012 data verified against original paper. See `results/reference/arad_rubinstein_2012_data.md` and `src/games.py`.
 
 ---
 

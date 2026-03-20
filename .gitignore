@@ -31,6 +31,10 @@ Thumbs.db
 .claude/settings.local.json
 .claude/worktrees/
 
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
 # Results (generated, can be large)
 # Uncomment if you want to gitignore raw results:
 # results/*.json

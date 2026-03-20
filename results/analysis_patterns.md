@@ -1,5 +1,7 @@
 # Analysis: What Opus 4.6 Gets Right and Wrong
 
+> **Note**: This analysis is from the V1 (bare prompt) run in session 2 (2026-03-19). Numbers here reflect V1 predictions, not the current V3 engineered prompt. See report.md for current results.
+
 ## Key Diagnostic Patterns
 
 ### 1. Level-k Anchoring Error (11-20 game)
