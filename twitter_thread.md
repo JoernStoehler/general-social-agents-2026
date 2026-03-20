@@ -1,4 +1,4 @@
-I'm# Twitter Thread Draft
+# Twitter Thread Draft
 
 **1/**
 Manning & Horton (2026) showed GPT-4o can't predict human game play without an elaborate pipeline (100 personas, calibration, mixture optimization).
