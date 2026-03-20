@@ -17,7 +17,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from src.games import Game
+from games import Game
 
 logger = logging.getLogger(__name__)
 
@@ -324,7 +324,7 @@ def sample_responses(
 
 
 if __name__ == "__main__":
-    from src.games import ELEVEN_TWENTY_GAME
+    from games import ELEVEN_TWENTY_GAME
 
     logging.basicConfig(level=logging.INFO)
 

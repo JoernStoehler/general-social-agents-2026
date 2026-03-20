@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.games import Game
-from src.metrics import kl_divergence, log_likelihood, total_variation
+from games import Game
+from metrics import kl_divergence, log_likelihood, total_variation
 
 
 def plot_distributions(
@@ -98,12 +98,12 @@ def compare_all(
 
 
 if __name__ == "__main__":
-    from src.baselines import (
+    from baselines import (
         level_k_distribution,
         nash_equilibrium_symmetric,
         uniform_distribution,
     )
-    from src.games import ELEVEN_TWENTY_GAME
+    from games import ELEVEN_TWENTY_GAME
 
     game = ELEVEN_TWENTY_GAME
 

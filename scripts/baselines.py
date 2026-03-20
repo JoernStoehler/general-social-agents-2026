@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from src.games import Game
+from games import Game
 
 
 def nash_equilibrium_symmetric(game: Game) -> dict[int, float]:
@@ -83,7 +83,7 @@ def uniform_distribution(game: Game) -> dict[int, float]:
 
 
 if __name__ == "__main__":
-    from src.games import ELEVEN_TWENTY_GAME
+    from games import ELEVEN_TWENTY_GAME
 
     game = ELEVEN_TWENTY_GAME
 

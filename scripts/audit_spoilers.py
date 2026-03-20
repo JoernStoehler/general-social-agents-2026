@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -145,9 +146,6 @@ class Flag:
     line_no: int
     text: str
     reason: str
-
-
-from dataclasses import dataclass  # noqa: E402 (kept near usage for clarity)
 
 
 def scan_file(path: Path) -> list[Flag]:

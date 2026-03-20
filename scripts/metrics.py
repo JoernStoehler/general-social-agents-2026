@@ -86,7 +86,7 @@ def log_likelihood(
 
 
 if __name__ == "__main__":
-    from src.games import ARAD_RUBINSTEIN_2012_BASIC
+    from games import ARAD_RUBINSTEIN_2012_BASIC
 
     human = ARAD_RUBINSTEIN_2012_BASIC
 
