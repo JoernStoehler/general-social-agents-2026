@@ -1,0 +1,142 @@
+[
+  {
+    "game": "Barc7",
+    "out": 0.4,
+    "enter": 0.6,
+    "left": 0.1,
+    "right": 0.9
+  },
+  {
+    "game": "Barc5",
+    "out": 0.45,
+    "enter": 0.55,
+    "left": 0.1,
+    "right": 0.9
+  },
+  {
+    "game": "Berk28",
+    "out": 0.28,
+    "enter": 0.72,
+    "left": 0.1,
+    "right": 0.9
+  },
+  {
+    "game": "Berk32",
+    "out": 0.8,
+    "enter": 0.2,
+    "left": 0.1,
+    "right": 0.9
+  },
+  {
+    "game": "Barc3",
+    "out": 0.72,
+    "enter": 0.28,
+    "left": 0.78,
+    "right": 0.22
+  },
+  {
+    "game": "Barc4",
+    "out": 0.65,
+    "enter": 0.35,
+    "left": 0.7,
+    "right": 0.3
+  },
+  {
+    "game": "Berk21",
+    "out": 0.68,
+    "enter": 0.32,
+    "left": 0.7,
+    "right": 0.3
+  },
+  {
+    "game": "Barc6",
+    "out": 0.73,
+    "enter": 0.27,
+    "left": 0.65,
+    "right": 0.35
+  },
+  {
+    "game": "Barc9",
+    "out": 0.65,
+    "enter": 0.35,
+    "left": 0.75,
+    "right": 0.25
+  },
+  {
+    "game": "Berk25",
+    "out": 0.62,
+    "enter": 0.38,
+    "left": 0.75,
+    "right": 0.25
+  },
+  {
+    "game": "Berk19",
+    "out": 0.77,
+    "enter": 0.23,
+    "left": 0.57,
+    "right": 0.43
+  },
+  {
+    "game": "Berk14",
+    "out": 0.85,
+    "enter": 0.15,
+    "left": 0.65,
+    "right": 0.35
+  },
+  {
+    "game": "Barc1",
+    "out": 0.75,
+    "enter": 0.25,
+    "left": 0.75,
+    "right": 0.25
+  },
+  {
+    "game": "Berk13",
+    "out": 0.65,
+    "enter": 0.35,
+    "left": 0.68,
+    "right": 0.32
+  },
+  {
+    "game": "Berk18",
+    "out": 0.1,
+    "enter": 0.9,
+    "left": 0.68,
+    "right": 0.32
+  },
+  {
+    "game": "Barc11",
+    "out": 0.4,
+    "enter": 0.6,
+    "left": 0.95,
+    "right": 0.05
+  },
+  {
+    "game": "Berk22",
+    "out": 0.58,
+    "enter": 0.42,
+    "left": 0.86,
+    "right": 0.14
+  },
+  {
+    "game": "Berk27",
+    "out": 0.58,
+    "enter": 0.42,
+    "left": 0.78,
+    "right": 0.22
+  },
+  {
+    "game": "Berk31",
+    "out": 0.8,
+    "enter": 0.2,
+    "left": 0.77,
+    "right": 0.23
+  },
+  {
+    "game": "Berk30",
+    "out": 0.68,
+    "enter": 0.32,
+    "left": 0.88,
+    "right": 0.12
+  }
+]
