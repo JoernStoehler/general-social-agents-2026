@@ -54,8 +54,8 @@ We tested three variants of the 11-20 game (different bonus values) using the ba
 |-----------|:---------:|
 | Unnamed, bonus=20 (original) | 0.47 |
 | Unnamed, bonus=10 (weak) | 0.54 |
-| Unnamed, bonus=50 (strong) | 0.72 |
-| Named (cite paper) | 0.64 |
+| Unnamed, bonus=50 (strong) | 0.78 |
+| Named (cite paper) | 0.54 |
 
 Note: KL values computed against the *original* human data (bonus=20), since human data for variant games doesn't exist. These measure whether the model adjusts its predictions when the game changes.
 
