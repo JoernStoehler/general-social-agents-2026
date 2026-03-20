@@ -1,55 +1,54 @@
 # Twitter Thread Draft
 
 **1/**
-I'm interested in whether modern LLMs can predict human behavior in economic games without elaborate pipelines.
+Can a single LLM predict human behavior in economic games — without an elaborate multi-agent pipeline?
 
-Manning & Horton (2026) needed 100 persona agents + calibration + mixture optimization for GPT-4o to get decent predictions.
+Manning & Horton (2026) needed 100 persona agents + calibration + mixture optimization for GPT-4o.
 
-Tested Claude Opus 4.6 with just a single prompt. Thread:
+I tested Claude Opus 4.6 with one prompt, one API call. Thread:
 
 **2/**
 The game: Arad & Rubinstein's 11-20 Money Request Game. Pick 11-20, get what you pick. If you pick exactly 1 less than opponent, +20 bonus.
 
-Humans cluster at 17-18 (62%). Raw GPT-4o puts ~87% on 19-20. D_KL = 2.7, worse than random.
+Humans cluster at 17-18 (62%). Raw GPT-4o puts ~87% on 19-20.
 
 **3/**
-Claude Opus 4.6, bare prompt: D_KL = 1.03. Better than GPT-4o, but still anchors at 19-20 instead of 17-18.
+Claude Opus 4.6, bare prompt: D_KL(h||q) = 0.47. Better than GPT-4o out of the box, but still anchors too high.
 
-With a domain-informed prompt (accurate experiment description + behavioral economics priming + structural analysis): D_KL = 0.59.
-
-Manning & Horton's optimized ensemble: D_KL = 0.30. So we're within 2x — with one call vs ten thousand.
+With a domain-informed prompt (accurate experiment description + level-k priming + structural analysis): D_KL(h||q) = 0.14. A 3.4x improvement. Deterministic across 5 runs.
 
 **4/**
-What changed? The bare model recalled the game but got the data WRONG — claimed humans "cluster around 20." The fix:
-- Describe the experiment accurately (Israeli undergrads, one-shot, real money)
-- Prime relevant concepts (level-k reasoning, bounded rationality)
-- Spell out structural implications the model should derive but doesn't
+The engineered prompt puts 45% mass on 17-18 (human: 62%) and 25% on 19-20 (human: 18%). Shape is right, peak is right — but not peaked enough.
+
+What changed? The bare model recalled the game but got the data WRONG — claimed humans "cluster around 20." The prompt fixes retrieval, not capability.
 
 **5/**
-Think of it like briefing a smart colleague: you wouldn't ask them to predict behavior without telling them who the participants are, what's at stake, and what game theory implies about reasoning depth.
+Think of it like briefing a smart colleague: describe who the participants are (Israeli undergrads, one-shot, real money), prime relevant frameworks (level-k reasoning, bounded rationality), and spell out structural implications (2-3 levels from 20 implies peak around 17-18).
 
-The model has the knowledge. The prompt ensures correct retrieval and application.
+The model has the knowledge. The prompt ensures correct application.
 
 **6/**
-Also tested 20 Charness-Rabin allocation games (fairness, reciprocity, social preferences).
+Important caveat: Manning & Horton report D_KL(q||h) = 2.7 for raw GPT-4o and 0.30 for their optimized ensemble. We report D_KL(h||q). These are different KL directions — direct numerical comparison is not meaningful without recomputing in the same direction.
 
-Correlation with human data: r = 0.79-0.85
-Mean absolute error: ~12-13 percentage points
-
-Direction is right. But the model hedges toward moderate predictions when humans are extreme.
+What we can say: one call gets qualitatively similar predictions to their 10,000-call pipeline.
 
 **7/**
-Contamination check: changed the 11-20 bonus from 20 to 10 and 50.
+Also tested 20 Charness-Rabin allocation games (fairness, reciprocity, social preferences).
 
-With bigger bonus (stronger undercutting incentive), the bare model predicted MORE mass on 19-20 — the wrong direction. Template-matching, not reasoning from game structure.
+Player A: r = 0.79, MAE = 0.12
+Player B: r = 0.85, MAE = 0.13
+
+Direction is right. But the model regresses toward moderate predictions when humans are extreme.
 
 **8/**
-A cautionary tale: during development, a "failure mode description" in the prompt accidentally included actual human data. Predictions improved — looked great but was tainted. Caught and corrected, but illustrates how easily ground truth leaks into AI prediction prompts.
+A cautionary tale: during development, a "failure mode description" in the prompt accidentally included actual human data. Predictions improved — looked great but was tainted.
+
+Caught and removed. All reported results are spoiler-free. But it shows how easily ground truth leaks into AI prediction prompts.
 
 **9/**
-Bottom line: a simple system (one model, one prompt, one call) gets within 2x of a complex 100-persona pipeline.
+Bottom line: one model, one prompt, one API call gets you surprisingly far on predicting human game play. The bottleneck is prompt engineering, not model capability.
 
-The bottleneck is prompt engineering, not model capability. Two years of model improvement (GPT-4o → Opus 4.6) closed most of the gap that previously required elaborate calibration.
+The key is treating the model like a knowledgeable colleague who needs a good briefing — not a black box you throw questions at.
 
 **10/**
 Data, code, prompts, and reasoning traces: [repo link]

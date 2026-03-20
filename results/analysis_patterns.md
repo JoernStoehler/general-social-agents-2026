@@ -43,3 +43,18 @@
 - Does the model predict better on more famous games? (fame gradient)
 - Would extended thinking improve level-k reasoning?
 - Would self-critique ("what would humans say about your prediction?") help?
+
+---
+
+## V3 Engineered Prompt Results (2026-03-20)
+
+Prompt engineering (V3) addressed the level-k anchoring error for 11-20 and the regression-to-mean for CR games. Key changes: step-by-step reasoning instructions, explicit warning that humans often show strong preferences, and richer experimental context.
+
+### 11-20 Game
+- **D_KL(h||q) = 0.14** (down from 0.47 in V1 unnamed condition)
+- The level-k anchoring error was fixed: the model no longer piles mass on 19-20
+
+### Charness-Rabin Games
+- **Player A**: MAE = 0.12, r = 0.79 (V1: MAE = 0.14, r = 0.73)
+- **Player B**: MAE = 0.13, r = 0.85 (V1: MAE = 0.14, r = 0.83)
+- Template behavior persists — the model still falls back on a small set of default values for some games rather than reasoning per-game
