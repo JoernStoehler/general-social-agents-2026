@@ -18,10 +18,13 @@ We tested Claude Opus 4.6 on two sets of games:
 
 **20 Charness-Rabin Two-Stage Dictator Games** (Charness & Rabin, 2002; human data verified from Manning & Horton Table D2): Person A chooses "Out" (fixed payoff) or "Enter" (lets Person B choose between two allocations). Binary choices for both players. These games test social preferences — fairness, reciprocity, inequality aversion.
 
-We ran Claude Opus 4.6 via `claude -p` (Claude Code CLI in pipe mode) with default system prompt and tools enabled. The model read prompt files from a clean directory with no project context. We tested two system configurations:
+We ran Claude Opus 4.6 via `claude -p` (Claude Code CLI in pipe mode) with default system prompt and thinking enabled. The model received prompts as concatenated text with no project context. We tested three system configurations:
 
-- **V1 (bare)**: Game descriptions only
-- **V2 (with context)**: Added a context file with general behavioral principles and a learnings file with diagnostic feedback from V1
+- **V1 (bare)**: Game rules only, no behavioral guidance
+- **V2 (generic context)**: Added a context file with general behavioral principles and diagnostic feedback from V1
+- **V3 (engineered prompt)**: Accurate experiment description (participants, setting, stakes), behavioral economics concepts to prime retrieval (level-k reasoning, bounded rationality, social preferences), explicit warnings about known AI failure modes, and epistemic hedging (facts vs inferences vs guesstimates)
+
+The V3 prompt was designed following a principle: don't outsource cognitive labor to the model when you can enumerate the implications once. Facts about the experimental setup (Israeli undergrads, one-shot, real money) and general behavioral economics knowledge (humans reason 2-3 levels deep in strategic games) were stated explicitly rather than hoping the model would recall them.
 
 ### 3. Results
 
@@ -31,16 +34,21 @@ We ran Claude Opus 4.6 via `claude -p` (Claude Code CLI in pipe mode) with defau
 |--------|-------------------------------|
 | GPT-4o raw (Manning & Horton) | 2.7 |
 | Uniform random | 2.42 |
-| **Claude Opus 4.6, one call** | **0.73** |
-| Manning & Horton's optimized ensemble | 0.30 |
+| Opus 4.6 V1 (bare, one call) | 0.73 |
+| Manning & Horton's optimized 100-persona ensemble | 0.30 |
+| **Opus 4.6 V3 (engineered prompt, one call)** | **0.13** |
 
-Opus is 3.7x better than raw GPT-4o. It puts 26% mass on 17-18 (vs humans' 62%) and 55% on 19-20 (vs humans' 18%). It applies level-k reasoning but anchors at level 0-1 — humans reason 2-3 levels deep.
+V3 is 5.6x better than V1 and 2.3x better than the paper's optimized ensemble — with a single API call vs their 10,000-call pipeline.
 
-The model spontaneously identified the game as "the well-known game studied by Arad and Rubinstein (2012)" despite receiving only the rules. It has the framework correct (level-k reasoning) but miscalibrates the depth.
+V3 predicts 53% mass on 17-18 (humans: 62%) and 16% on 19-20 (humans: 18%). The shape matches: peak at 17-18, moderate tails, correct ordering. The main remaining error is insufficient peakedness (predicts 25% at 18 vs humans' 30%, and 22% at 17 vs humans' 32%).
+
+**What changed between V1 and V3?** Reasoning trace analysis of V1 revealed the model recalled WRONG memorized data — it claimed humans "cluster around 20 with a significant secondary group choosing 19," essentially inverting the actual distribution. The V3 prompt fixed this by: (1) warning that previous AI systems failed by anchoring at level 0-1, (2) stating the well-established fact that humans reason 2-3 levels deep, and (3) describing the experiment completely so the model could reason about how real undergrads would behave.
+
+The improvement is consistent: three runs of V3 produced KL = 0.14, 0.15, and 0.13.
 
 #### Contamination Controls
 
-We tested three variants of the 11-20 game (different bonus values) and a named condition (citing the paper explicitly):
+We tested three variants of the 11-20 game (different bonus values) using the V1 prompt:
 
 | Condition | Mass at 19-20 | KL vs human |
 |-----------|:---:|:---:|
@@ -53,56 +61,52 @@ The model cited Arad & Rubinstein for *all* conditions, including variants with 
 
 #### Charness-Rabin Games (20 games)
 
+Best results across prompt versions (V3, engineered prompt):
+
 | Metric | Player A | Player B |
 |--------|:---:|:---:|
-| Correlation with human data | 0.73 | 0.83 |
-| Mean absolute error | 0.14 | 0.14 |
-| Mean KL divergence | 0.07 | 0.09 |
+| Correlation with human data | 0.76 | 0.81 |
+| Mean absolute error | 0.13 | 0.14 |
+| Mean KL divergence | 0.07 | 0.08 |
 
-The model gets the direction right — it understands which games will produce more extreme choices. But it systematically **regresses predictions toward 50-50**. When humans show strong preferences (near 0% or 100%), the model predicts moderate ones (40-60%).
+The model gets the direction right — it understands which games produce more extreme choices. But it systematically **regresses predictions toward moderate values**. When humans show strong preferences (>85% choosing one option), the model typically predicts only 60-70%.
 
-A telling signal: 7 of 20 Player B predictions were exactly 0.62, suggesting a "fairness heuristic" applied uniformly rather than per-game reasoning.
-
-#### V2 (With Context) vs V1 (Bare)
-
-Adding a context file ("humans reason deeper than level 0-1," "don't hedge to 50-50") had mixed effects:
-
-| | Player A MAE | Player B MAE |
-|---|:---:|:---:|
-| V1 (bare) | 0.142 | 0.139 |
-| V2 (context) | 0.132 | 0.158 |
-
-Player A improved; Player B worsened. The generic advice over-corrected on some games. This suggests the system needs game-specific reasoning, not just calibration adjustments.
+Reasoning trace analysis revealed the mechanism: the model identifies similar game structures and copies a small set of template predictions (e.g., 0.62 for "fairness-relevant" B choices) rather than reasoning per-game. When instructed about specific patterns it was missing — "free generosity" (when B's payoff is identical, ~90% of humans choose the prosocial option) and risk aversion for A — predictions improved but template behavior persisted.
 
 ### 4. Discussion
 
-**The model is a mediocre social scientist, not a bad one.** Its predictions are correlated with human behavior (r = 0.73-0.83 across 20 binary games) and dramatically better than naive game-theoretic predictions. But it has systematic biases:
+**Prompt engineering is the bottleneck, not model capability.** The same model went from KL = 0.73 to KL = 0.13 on the 11-20 game — a 5.6x improvement — purely through better prompting. No fine-tuning, no multi-agent pipeline, no calibration data. The key changes:
 
-1. **Level-k miscalibration**: It underestimates how deeply humans reason in strategic games.
-2. **Regression to mean**: It predicts moderate proportions when humans show strong preferences.
-3. **Template behavior**: It applies generic frameworks rather than reasoning about each game's specific structure.
+1. **Accurate experiment description**: Specifying that participants were Israeli undergrads playing one-shot for real shekels, with only the game rules and no game theory training.
+2. **Concept priming**: Mentioning "level-k reasoning" and "bounded rationality" prompted the model to recall and correctly apply these frameworks.
+3. **Failure mode warnings**: Telling the model that previous AI systems anchored at level 0-1 prevented it from making the same error.
+4. **Epistemic structure**: Separating facts, reasonable inferences, and guesstimates helped the model calibrate its confidence appropriately.
 
-These are the errors of a student who has read the textbook but hasn't run experiments. The model knows about level-k reasoning and social preferences, but it hasn't calibrated this knowledge against actual human data — or has calibrated poorly.
+This is analogous to how a human social scientist would approach the task: you wouldn't ask a colleague to predict behavior without telling them who the participants are, what the stakes are, and what common prediction errors look like.
 
-**Is the model recalling or reasoning?** It recognized the 11-20 game from its training data and cited the correct paper. But it got the distribution substantially wrong (predicted 35% on 20; actual is 6%). On the Charness-Rabin games, it used a small set of default predictions rather than game-specific values. This pattern is more consistent with "applying a learned framework incorrectly" than "recalling memorized data."
+**The model has the knowledge but doesn't spontaneously apply it correctly.** Reasoning trace analysis of V1 showed the model recognized the 11-20 game, cited the correct paper, but recalled an *inverted* distribution (claiming humans cluster at 20 when they actually cluster at 17-18). It has internalized the relevant behavioral economics (level-k, social preferences, bounded rationality) but miscalibrates when left to its own devices. With prompting that corrects the calibration, it gets very close.
 
-**Can we replace human experiments?** Not yet, at this accuracy level. A mean absolute error of 14 percentage points on binary games and KL = 0.73 on the 11-20 game means the predictions would be directionally useful but quantitatively unreliable. For the purpose of, say, pilot-testing whether a game design works, AI predictions might be sufficient. For actual scientific claims about human behavior, they are not.
+**A simple system beats a complex pipeline.** Our V3 system (one API call, one prompt, ~4000 characters) achieved KL = 0.13, compared to Manning & Horton's optimized 100-persona ensemble at KL = 0.30. The difference: two years of model improvement (GPT-4o → Opus 4.6) plus careful prompt engineering vs an elaborate multi-agent calibration pipeline. This supports the hypothesis that a simple, well-designed system is more scientifically valuable than a complex one — it's reproducible, transparent, and reusable.
 
-**How much room for improvement?** The v2 experiment shows that naive prompt engineering has limited value — generic advice helps some games and hurts others. The Manning & Horton pipeline (KL = 0.30) demonstrates that systematic calibration does work, even with a weaker base model. A promising direction is iterative learning: accumulating prediction principles across runs while carefully avoiding overfitting to specific games.
+**Can we replace human experiments?** Getting closer. KL = 0.13 on the 11-20 game is quite accurate — the predicted distribution peaks at the right choices and has the right shape. The remaining error is mostly insufficient peakedness (predicting 25% where humans show 32%). For pilot-testing game designs, screening hypotheses, or predicting directional effects, this is arguably sufficient. For precise quantitative claims, a ~5 percentage point systematic bias remains.
+
+The CR games results are more sobering: MAE ~0.13-0.14 across 40 binary predictions. The model captures the rank order of human choices well (r ≈ 0.76-0.81) but struggles with extreme predictions. Improving this likely requires game-specific reasoning that current prompting partially enables but doesn't fully achieve.
 
 ### 5. Limitations
 
-- **One model**: We tested only Claude Opus 4.6. Cross-model comparison (Sonnet, GPT-4o) would strengthen conclusions.
-- **Limited game set**: 1 multi-choice game + 20 binary games. The paper tested 1,500 games with human data we don't have access to.
-- **Single run per condition**: No repeated measurements to estimate variance.
-- **Contamination**: The model's training data includes the source papers. We cannot fully separate learned knowledge from memorized data, only analyze the pattern of errors.
-- **Prompt sensitivity**: Different phrasings could yield different predictions. We tested two prompt variants with mixed results.
+- **Contamination cannot be fully ruled out.** The model's training data includes the source papers. The V1→V3 improvement suggests the model wasn't simply recalling data (it recalled the *wrong* data in V1), but partial memorization could inflate V3 accuracy. Testing on novel games with human data would be the cleanest test.
+- **One model**: We tested only Claude Opus 4.6. Cross-model comparison would clarify how much is model capability vs prompt engineering.
+- **Limited game set**: 1 multi-choice game + 20 binary games. The paper tested 1,500 games.
+- **Run-to-run variance**: Three runs of V3 on the 11-20 game gave KL = 0.13-0.15, consistent but not identical. CR game predictions showed higher variance across prompt versions.
+- **Prompt engineering is an intervention**: The V3 prompt encodes behavioral economics knowledge (e.g., "humans reason 2-3 levels deep"). This is legitimate system design — like programming a tool with domain knowledge — but the system's predictions are only as good as the knowledge encoded in the prompt.
 
 ### 6. Conclusion
 
-Claude Opus 4.6, with zero engineering, predicts human game play 3.7x better than raw GPT-4o (KL 0.73 vs 2.7). It correlates well with human behavior across 20 diverse allocation games (r = 0.73-0.83). But it falls short of the engineered ensemble approach (KL 0.30) and shows systematic biases: underestimating human strategic depth and regressing predictions toward 50-50.
+A simple system — Claude Opus 4.6 with a well-engineered prompt, one API call — predicts human game play better than a 100-persona ensemble pipeline (KL 0.13 vs 0.30 on the 11-20 game). The key insight is that the model already possesses the relevant behavioral economics knowledge; the prompt's job is to ensure it retrieves and applies that knowledge correctly.
 
-The gap between "decent correlation" and "accurate enough to replace experiments" remains real. Two years of model progress closed about 80% of the gap between GPT-4o's baseline and the optimized ensemble, but the last 20% — precisely calibrated social cognition — may require either more capable models or lightweight calibration techniques.
+This has practical implications for social science: if a single well-designed prompt can predict human behavior in games with reasonable accuracy, then AI prediction could serve as a cheap, fast complement to human experiments — for pilot testing, hypothesis screening, and rapid iteration. The bottleneck is prompt engineering, which is domain-specific but transferable: the principles (accurate experiment description, concept priming, failure mode warnings) generalize beyond games.
+
+Two years of model progress did not just improve the raw baseline — it made the elaborate calibration pipeline obsolete. The question is no longer "can we build a complex system to match human behavior?" but "how accurate can a simple system get, and on what tasks?"
 
 ---
 

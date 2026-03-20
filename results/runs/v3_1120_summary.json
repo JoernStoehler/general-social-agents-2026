@@ -1,0 +1,33 @@
+{
+  "game": "eleven_twenty",
+  "method": "direct_prediction",
+  "condition": "v3_engineered_prompt",
+  "model_id": "claude-opus-4-6",
+  "prompt_file": "prompts/1120/prompt.md",
+  "timestamp": "2026-03-20T08:20:00Z",
+  "runs": [
+    {
+      "run": 1,
+      "predicted_distribution": {"11": 0.02, "12": 0.03, "13": 0.04, "14": 0.05, "15": 0.08, "16": 0.13, "17": 0.22, "18": 0.25, "19": 0.14, "20": 0.04},
+      "kl": 0.1433
+    },
+    {
+      "run": 2,
+      "predicted_distribution": {"11": 0.02, "12": 0.03, "13": 0.04, "14": 0.05, "15": 0.08, "16": 0.13, "17": 0.22, "18": 0.25, "19": 0.15, "20": 0.03},
+      "kl": 0.1523
+    },
+    {
+      "run": 3,
+      "predicted_distribution": {"11": 0.02, "12": 0.02, "13": 0.02, "14": 0.03, "15": 0.08, "16": 0.14, "17": 0.25, "18": 0.28, "19": 0.12, "20": 0.04},
+      "kl": 0.1339
+    }
+  ],
+  "human_distribution": {"11": 0.04, "12": 0.00, "13": 0.03, "14": 0.06, "15": 0.01, "16": 0.06, "17": 0.32, "18": 0.30, "19": 0.12, "20": 0.06},
+  "mean_kl": 0.1432,
+  "comparison": {
+    "gpt4o_raw": 2.7,
+    "opus46_v1_bare": 0.73,
+    "manning_horton_ensemble": 0.30,
+    "opus46_v3_engineered": 0.14
+  }
+}
