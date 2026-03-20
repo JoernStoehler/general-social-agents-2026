@@ -18,13 +18,14 @@ The paper uses MAE (mean absolute error) on 40 binary predictions (20 games × 2
 |--------|:-----------:|:-----------:|
 | GPT-4o baseline (Manning & Horton) | 0.52 | 0.29 |
 | GPT-4o optimized ensemble (Manning & Horton) | 0.17 | 0.15 |
-| **Opus 4.6, one prompt, one call** | **~0.14** | **~0.17** |
+| Opus 4.6, minimal prompt | ~0.14 | ~0.17 |
+| **Opus 4.6, minimal + fairness hint** | **~0.14** | **~0.11** |
 
-Run-to-run variance is ~0.03-0.04 MAE, so these numbers are approximate. The model captures the rank order of human preferences (r ≈ 0.75-0.80) but regresses toward moderate predictions when humans show strong preferences.
+Run-to-run variance is ~0.03-0.04 MAE, so these numbers are approximate. The fairness hint ("B's choice reveals genuine fairness preferences") improved Player B by ~0.06 MAE, which exceeds typical variance. The model captures the rank order of human preferences (r ≈ 0.75-0.86) but regresses toward moderate predictions when humans show strong preferences.
 
 ## What we learned
 
-**Prompt engineering has diminishing returns.** Adding behavioral economics advice (social preferences, risk aversion, anti-hedging instructions) to the minimal prompt does not reliably improve predictions — run-to-run variance (~0.03-0.04 MAE) exceeds any consistent improvement from prompt additions. The minimal system (task description + game rules) is the defensible result.
+**Prompt engineering has diminishing returns — with one exception.** We tested 6 single-sentence additions to the minimal prompt. Most (risk aversion, anti-hedging, free generosity, stronger extremes) did not reliably improve predictions — run-to-run variance (~0.03-0.04 MAE) exceeded any consistent effect. One addition helped: telling the model that "B's choice reveals genuine fairness preferences" improved Player B MAE from 0.17 to 0.11 (a 37% reduction, larger than typical variance). The minimal system (task description + game rules + one fairness hint) is the defensible result.
 
 **The model has the knowledge but misapplies it.** Reasoning trace analysis shows Opus 4.6 recognizes the games, cites the right papers, and knows the relevant behavioral economics. But without guidance it miscalibrates — anchoring on game-theoretic rationality instead of modeling bounded human cognition.
 
