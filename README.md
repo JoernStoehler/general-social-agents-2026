@@ -18,13 +18,13 @@ The paper uses MAE (mean absolute error) on 40 binary predictions (20 games × 2
 |--------|:-----------:|:-----------:|
 | GPT-4o baseline (Manning & Horton) | 0.52 | 0.29 |
 | GPT-4o optimized ensemble (Manning & Horton) | 0.17 | 0.15 |
-| **Opus 4.6, one prompt, one call** | **0.12** | **0.13** |
+| **Opus 4.6, one prompt, one call** | **~0.14** | **~0.17** |
 
-The model captures the rank order of human preferences well (r = 0.79 / 0.85) but systematically regresses toward moderate predictions when humans show strong preferences.
+Run-to-run variance is ~0.03-0.04 MAE, so these numbers are approximate. The model captures the rank order of human preferences (r ≈ 0.75-0.80) but regresses toward moderate predictions when humans show strong preferences.
 
 ## What we learned
 
-**Prompt engineering is the bottleneck.** The same model goes from much worse to competitive purely through better prompting. The key: describe the experiment accurately (who the participants are, what's at stake), prime relevant concepts (level-k reasoning, bounded rationality, social preferences), and spell out structural implications that the model should derive but doesn't.
+**Prompt engineering has diminishing returns.** Adding behavioral economics advice (social preferences, risk aversion, anti-hedging instructions) to the minimal prompt does not reliably improve predictions — run-to-run variance (~0.03-0.04 MAE) exceeds any consistent improvement from prompt additions. The minimal system (task description + game rules) is the defensible result.
 
 **The model has the knowledge but misapplies it.** Reasoning trace analysis shows Opus 4.6 recognizes the games, cites the right papers, and knows the relevant behavioral economics. But without guidance it miscalibrates — anchoring on game-theoretic rationality instead of modeling bounded human cognition.
 
