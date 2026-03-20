@@ -18,13 +18,11 @@ We tested Claude Opus 4.6 on two sets of games:
 
 **20 Charness-Rabin Two-Stage Dictator Games** (Charness & Rabin, 2002; human data verified from Manning & Horton Table D2): Person A chooses "Out" (fixed payoff) or "Enter" (lets Person B choose between two allocations). Binary choices for both players. These games test social preferences — fairness, reciprocity, inequality aversion.
 
-We ran Claude Opus 4.6 via `claude -p` (Claude Code CLI in pipe mode) with default system prompt and thinking enabled. The model received prompts as concatenated text with no project context. We tested three system configurations:
+We ran Claude Opus 4.6 via `claude -p` (Claude Code CLI in pipe mode) with default system prompt and thinking enabled. The model received prompts as concatenated text with no project context.
 
-- **V1 (bare)**: Game rules only, no behavioral guidance
-- **V2 (generic context)**: Added a context file with general behavioral principles and diagnostic feedback from V1
-- **V3 (engineered prompt)**: Accurate experiment description (participants, setting, stakes), behavioral economics concepts to prime retrieval (level-k reasoning, bounded rationality, social preferences), explicit warnings about known AI failure modes, and epistemic hedging (facts vs inferences vs guesstimates)
+The prompt has three parts: (1) a **system context** explaining the task (predict human distributions, minimize KL), (2) a **learnings file** with general behavioral economics knowledge and known AI failure modes, and (3) a **game description** with complete experiment details and structural analysis. All three are game-independent except the game description itself.
 
-The V3 prompt was designed following a principle: don't outsource cognitive labor to the model when you can enumerate the implications once. Facts about the experimental setup (Israeli undergrads, one-shot, real money) and general behavioral economics knowledge (humans reason 2-3 levels deep in strategic games) were stated explicitly rather than hoping the model would recall them.
+The prompt was designed following a key principle from Jörn: don't outsource cognitive labor to the model when you can enumerate the implications once. Facts about the experimental setup (Israeli undergrads, one-shot, real money), structural implications (level-k reasoning starting from 20 implies the peak is 2-3 steps down), and known failure modes (GPT-4o anchored at level 0-1) are stated explicitly rather than hoping the model recalls them. Critically, none of this is spoiler data — it's what a competent social scientist would derive before seeing results.
 
 ### 3. Results
 
@@ -36,15 +34,15 @@ The V3 prompt was designed following a principle: don't outsource cognitive labo
 | Uniform random | 2.42 |
 | Opus 4.6 V1 (bare, one call) | 0.73 |
 | Manning & Horton's optimized 100-persona ensemble | 0.30 |
-| **Opus 4.6 V3 (engineered prompt, one call)** | **0.13** |
+| **Opus 4.6 V3 (engineered prompt, one call)** | **~0.20** |
 
-V3 is 5.6x better than V1 and 2.3x better than the paper's optimized ensemble — with a single API call vs their 10,000-call pipeline.
+V3 is 3.7x better than V1 and ~1.5x better than the paper's optimized ensemble — with a single API call vs their 10,000-call pipeline.
 
-V3 predicts 53% mass on 17-18 (humans: 62%) and 16% on 19-20 (humans: 18%). The shape matches: peak at 17-18, moderate tails, correct ordering. The main remaining error is insufficient peakedness (predicts 25% at 18 vs humans' 30%, and 22% at 17 vs humans' 32%).
+V3 predicts ~37% mass on 17-18 (humans: 62%) and ~32% on 19-20 (humans: 18%). The shape is correct (peak at 17-18, declining tails) but insufficiently peaked — too much mass remains at 19-20.
 
-**What changed between V1 and V3?** Reasoning trace analysis of V1 revealed the model recalled WRONG memorized data — it claimed humans "cluster around 20 with a significant secondary group choosing 19," essentially inverting the actual distribution. The V3 prompt fixed this by: (1) warning that previous AI systems failed by anchoring at level 0-1, (2) stating the well-established fact that humans reason 2-3 levels deep, and (3) describing the experiment completely so the model could reason about how real undergrads would behave.
+**What changed between V1 and V3?** Reasoning trace analysis of V1 revealed the model recalled WRONG memorized data — it claimed humans "cluster around 20 with a significant secondary group choosing 19," essentially inverting the actual distribution. The V3 prompt fixed this by: (1) providing general knowledge about level-k reasoning depth (humans reason 2-3 levels), (2) describing the experiment completely so the model could reason about how real undergrads would behave, and (3) spelling out the structural implications (2-3 steps from 20 → peak around 17-18).
 
-The improvement is consistent: three runs of V3 produced KL = 0.14, 0.15, and 0.13.
+**Note on methodology**: An earlier version of this prompt contained a spoiler ("in reality only ~18% chose 19-20") that was inadvertently included in the failure mode description. Results with that spoiler (KL ~0.13) are not reported here. All results above use the spoiler-free prompt.
 
 #### Contamination Controls
 
@@ -75,38 +73,40 @@ Reasoning trace analysis revealed the mechanism: the model identifies similar ga
 
 ### 4. Discussion
 
-**Prompt engineering is the bottleneck, not model capability.** The same model went from KL = 0.73 to KL = 0.13 on the 11-20 game — a 5.6x improvement — purely through better prompting. No fine-tuning, no multi-agent pipeline, no calibration data. The key changes:
+**Prompt engineering is the bottleneck, not model capability.** The same model went from KL = 0.73 to ~0.20 on the 11-20 game — a ~3.7x improvement — purely through better prompting. No fine-tuning, no multi-agent pipeline, no calibration data. The key changes:
 
 1. **Accurate experiment description**: Specifying that participants were Israeli undergrads playing one-shot for real shekels, with only the game rules and no game theory training.
 2. **Concept priming**: Mentioning "level-k reasoning" and "bounded rationality" prompted the model to recall and correctly apply these frameworks.
-3. **Failure mode warnings**: Telling the model that previous AI systems anchored at level 0-1 prevented it from making the same error.
-4. **Epistemic structure**: Separating facts, reasonable inferences, and guesstimates helped the model calibrate its confidence appropriately.
+3. **Structural implications**: Spelling out that 2-3 levels of reasoning from 20 implies concentration around 17-18 — derivable from general knowledge but not spontaneously derived by the model.
 
-This is analogous to how a human social scientist would approach the task: you wouldn't ask a colleague to predict behavior without telling them who the participants are, what the stakes are, and what common prediction errors look like.
+This is analogous to how a human social scientist would approach the task: you wouldn't ask a colleague to predict behavior without telling them who the participants are, what the stakes are, and what structural analysis implies about the outcome.
 
-**The model has the knowledge but doesn't spontaneously apply it correctly.** Reasoning trace analysis of V1 showed the model recognized the 11-20 game, cited the correct paper, but recalled an *inverted* distribution (claiming humans cluster at 20 when they actually cluster at 17-18). It has internalized the relevant behavioral economics (level-k, social preferences, bounded rationality) but miscalibrates when left to its own devices. With prompting that corrects the calibration, it gets very close.
+**The model has the knowledge but doesn't spontaneously apply it correctly.** Reasoning trace analysis of V1 showed the model recognized the 11-20 game, cited the correct paper, but recalled an *inverted* distribution (claiming humans cluster at 20 when they actually cluster at 17-18). It has internalized the relevant behavioral economics (level-k, social preferences, bounded rationality) but miscalibrates when left to its own devices. The prompt's job is to ensure correct retrieval and application.
 
-**A simple system beats a complex pipeline.** Our V3 system (one API call, one prompt, ~4000 characters) achieved KL = 0.13, compared to Manning & Horton's optimized 100-persona ensemble at KL = 0.30. The difference: two years of model improvement (GPT-4o → Opus 4.6) plus careful prompt engineering vs an elaborate multi-agent calibration pipeline. This supports the hypothesis that a simple, well-designed system is more scientifically valuable than a complex one — it's reproducible, transparent, and reusable.
+**A simple system beats a complex pipeline.** Our system (one API call, one prompt) achieved KL ~0.20, compared to Manning & Horton's optimized 100-persona ensemble at KL = 0.30. The difference: two years of model improvement (GPT-4o → Opus 4.6) plus domain-informed prompt engineering vs an elaborate multi-agent calibration pipeline. A simpler system is more scientifically valuable — it's reproducible, transparent, and reusable.
 
-**Can we replace human experiments?** Getting closer. KL = 0.13 on the 11-20 game is quite accurate — the predicted distribution peaks at the right choices and has the right shape. The remaining error is mostly insufficient peakedness (predicting 25% where humans show 32%). For pilot-testing game designs, screening hypotheses, or predicting directional effects, this is arguably sufficient. For precise quantitative claims, a ~5 percentage point systematic bias remains.
+**Can we replace human experiments?** Getting closer but not yet. KL ~0.20 on the 11-20 game correctly identifies the peak region (17-18) but remains insufficiently peaked — too much mass at 19-20. For pilot-testing game designs or screening hypotheses, this directional accuracy may be sufficient. For quantitative claims, the systematic bias remains.
 
-The CR games results are more sobering: MAE ~0.13-0.14 across 40 binary predictions. The model captures the rank order of human choices well (r ≈ 0.76-0.81) but struggles with extreme predictions. Improving this likely requires game-specific reasoning that current prompting partially enables but doesn't fully achieve.
+The CR games show similar patterns: MAE ~0.13-0.14 across 40 binary predictions. The model captures the rank order of human choices well (r ≈ 0.76-0.81) but struggles with extreme predictions and shows template behavior across structurally similar games.
+
+**Spoiler contamination**: During development, the prompt inadvertently included a spoiler (actual human data for the 11-20 game's 19-20 mass), which produced KL ~0.13. This was caught and removed. All reported results use the spoiler-free prompt. This episode illustrates a general risk in AI prediction systems: ground truth can leak into prompts through "failure mode descriptions" that reference actual outcomes.
 
 ### 5. Limitations
 
 - **Contamination cannot be fully ruled out.** The model's training data includes the source papers. The V1→V3 improvement suggests the model wasn't simply recalling data (it recalled the *wrong* data in V1), but partial memorization could inflate V3 accuracy. Testing on novel games with human data would be the cleanest test.
+- **Spoiler risk**: As demonstrated by our own error, prompt engineering for prediction tasks requires careful auditing to ensure no ground truth leaks into the prompt. We caught and corrected one such leak.
 - **One model**: We tested only Claude Opus 4.6. Cross-model comparison would clarify how much is model capability vs prompt engineering.
 - **Limited game set**: 1 multi-choice game + 20 binary games. The paper tested 1,500 games.
-- **Run-to-run variance**: Three runs of V3 on the 11-20 game gave KL = 0.13-0.15, consistent but not identical. CR game predictions showed higher variance across prompt versions.
-- **Prompt engineering is an intervention**: The V3 prompt encodes behavioral economics knowledge (e.g., "humans reason 2-3 levels deep"). This is legitimate system design — like programming a tool with domain knowledge — but the system's predictions are only as good as the knowledge encoded in the prompt.
+- **Run-to-run variance**: Results showed moderate variance across runs, making precise KL estimates uncertain.
+- **Prompt engineering is an intervention**: The prompt encodes behavioral economics knowledge (e.g., "humans reason 2-3 levels deep"). This is legitimate system design — like programming a tool with domain knowledge — but the system's predictions are only as good as the knowledge encoded in the prompt.
 
 ### 6. Conclusion
 
-A simple system — Claude Opus 4.6 with a well-engineered prompt, one API call — predicts human game play better than a 100-persona ensemble pipeline (KL 0.13 vs 0.30 on the 11-20 game). The key insight is that the model already possesses the relevant behavioral economics knowledge; the prompt's job is to ensure it retrieves and applies that knowledge correctly.
+A simple system — Claude Opus 4.6 with a domain-informed prompt, one API call — predicts human game play better than a 100-persona ensemble pipeline (KL ~0.20 vs 0.30 on the 11-20 game). The key insight is that the model possesses the relevant behavioral economics knowledge but doesn't spontaneously apply it correctly; the prompt's job is to ensure correct retrieval and application.
 
-This has practical implications for social science: if a single well-designed prompt can predict human behavior in games with reasonable accuracy, then AI prediction could serve as a cheap, fast complement to human experiments — for pilot testing, hypothesis screening, and rapid iteration. The bottleneck is prompt engineering, which is domain-specific but transferable: the principles (accurate experiment description, concept priming, failure mode warnings) generalize beyond games.
+The bottleneck is prompt engineering: accurate experiment descriptions, structural analysis, and concept priming. These principles generalize beyond games. The remaining gap to perfect prediction is substantial — the model still underweights extreme human preferences and falls back on template reasoning — but the trajectory from GPT-4o's 2.7 to Opus 4.6's ~0.20 shows rapid progress.
 
-Two years of model progress did not just improve the raw baseline — it made the elaborate calibration pipeline obsolete. The question is no longer "can we build a complex system to match human behavior?" but "how accurate can a simple system get, and on what tasks?"
+Two years of model progress closed most of the gap that previously required elaborate calibration pipelines. Whether the last mile requires better models, better prompts, or lightweight calibration remains an open question.
 
 ---
 

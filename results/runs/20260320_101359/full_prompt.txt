@@ -1,0 +1,77 @@
+# Task: Predict the distribution of human choices in economic experiments
+
+You are predicting how real humans played specific economic experiments. Your goal is to produce a probability distribution over the possible choices that minimizes KL divergence from the actual empirical distribution.
+
+This is a difficult prediction task. Read the game description carefully for the experiment details, and the learnings file for general guidance on predicting human behavior in games.
+
+Output ONLY the requested JSON, nothing else. Probabilities must sum to 1.0 for each decision.
+
+---
+
+# Learnings: Predicting human behavior in economic games
+
+These are general patterns and failure modes discovered from past prediction attempts. Apply them as appropriate to each specific game.
+
+## Common AI failure modes
+
+Previous AI systems performed very poorly on these tasks. Key failure modes:
+
+- **Level-k anchoring**: AI systems anchor on level-0 or level-1 game-theoretic reasoning (e.g., "the rational choice is X"). Humans typically reason 2-3 levels deep, not 0-1. If your first instinct is "the obvious/rational choice is X," most humans have already thought past that.
+- **Regression to 50-50**: When uncertain, AI systems predict moderate splits (40-60%). Real human distributions are often extreme — 80-95% choosing one option when it dominates on multiple dimensions. Commit to your best prediction; don't hedge.
+- **Template predictions**: AI systems apply the same prediction to structurally similar games. Each game is different — small payoff changes can shift behavior substantially. Reason about each game independently.
+- **Ignoring experiment context**: The specific participant population, stakes, and framing all matter. University students playing for real money behave differently than hypothetical rational agents.
+
+## Key behavioral economics principles
+
+- **Bounded rationality**: Humans satisfice, not optimize. They use heuristics and limited-depth reasoning.
+- **Social preferences**: Humans care about fairness, reciprocity, and efficiency — not just their own payoff. Inequality aversion (Fehr & Schmidt), reciprocity (Rabin), and efficiency concerns all shape choices.
+- **"Free generosity"**: When being generous costs nothing (identical personal payoff either way), the vast majority choose the prosocial option.
+- **Risk aversion**: When a safe option gives a decent outcome, most humans take it. Don't underestimate how risk-averse people are when the safe option is "good enough."
+- **Focal points**: People coordinate on salient options — round numbers, equal splits, symmetric outcomes.
+
+## How to approach each game
+
+1. Identify what motives (self-interest, fairness, efficiency, reciprocity) point which direction
+2. Consider whether motives align (→ extreme prediction, 80-95%) or genuinely conflict (→ moderate prediction)
+3. Consider the specific participant population and stakes
+4. Commit to a specific prediction — don't default to moderate values out of uncertainty
+
+---
+
+# Game: 11-20 Money Request Game
+
+## Experiment details
+
+**Source**: Arad & Rubinstein (2012), "The 11-20 Money Request Game: A Level-k Reasoning Study," American Economic Review 102(7): 3561-3573.
+
+**Participants**: 108 undergraduate students at Tel Aviv University and the Technion (Israel). Not specially trained in game theory. Playing for real money (Israeli shekels).
+
+**Setup**: One-shot (played exactly once). Anonymous. Random pairing. Simultaneous independent decisions. No communication between participants.
+
+**Instructions shown to participants** (verbatim):
+> You and another player are playing a game in which each player requests an amount of money. The amount must be (an integer) between 11 and 20 shekels. Each player will receive the amount he requests. A player will receive an additional amount of 20 shekels if he asks for exactly one shekel less than the other player.
+
+That is all participants were told. No game theory terminology, no discussion of strategies.
+
+## Structural analysis
+
+- Choosing 20 gives 20 shekels guaranteed. Choosing 19 gives 19 guaranteed + a chance at the 20 bonus (total 39) if the opponent chose 20.
+- The bonus (20 shekels) is very large relative to the 1-shekel cost of undercutting. Giving up 1 shekel for a chance at 20 is a very good deal. This makes undercutting highly attractive.
+- A naive (level-0) player might choose 20 (maximum guaranteed). A level-1 player best-responds to level-0 by choosing 19. A level-2 player best-responds to the mix of level-0 and level-1 by choosing 18. Level-3 chooses 17. And so on.
+- Since most humans reason 2-3 levels deep in strategic games, and level-0 starts at 20: level-1 chooses 19, level-2 chooses 18, level-3 chooses 17. So the bulk of choices should concentrate around 17-18 (the modal reasoning depth of 2-3 steps from 20).
+- Very few participants would go as low as 11-14 — the guaranteed money lost is too large relative to the speculative bonus. Very few would stay at 20 — forgoing the bonus when undercutting costs only 1 shekel seems naive, and most people think at least one step ahead.
+- The distribution should be peaked, not flat. One-shot games produce clustering around a few focal strategies.
+
+## Predict
+
+What probability distribution over choices {11, 12, 13, 14, 15, 16, 17, 18, 19, 20} would you predict for this experiment?
+
+Output format:
+```json
+{"11": p11, "12": p12, "13": p13, "14": p14, "15": p15, "16": p16, "17": p17, "18": p18, "19": p19, "20": p20}
+```
+
+---
+
+
+Output ONLY the JSON object/array, nothing else.

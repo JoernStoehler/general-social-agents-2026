@@ -1,1 +1,0 @@
-prompts/shared/task.md prompts/shared/reasoning_guide.md prompts/cr/prompt.md

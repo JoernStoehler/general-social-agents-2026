@@ -1,0 +1,8 @@
+{
+  "_comment": "Example output format for a hypothetical 5-choice game. Your actual output should match the format specified in the game description.",
+  "example_distribution": {"1": 0.05, "2": 0.15, "3": 0.40, "4": 0.30, "5": 0.10},
+  "example_binary": [
+    {"game": "ExampleGame1", "option_a": 0.70, "option_b": 0.30},
+    {"game": "ExampleGame2", "option_a": 0.25, "option_b": 0.75}
+  ]
+}
